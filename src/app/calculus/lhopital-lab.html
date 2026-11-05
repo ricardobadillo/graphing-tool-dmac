@@ -1,0 +1,146 @@
+<section class="grid gap-4 lg:grid-cols-[minmax(300px,360px)_minmax(0,1fr)]">
+  <aside class="flex flex-col gap-4">
+    <div class="rounded-2xl border border-white/10 bg-white/[0.03] p-4 shadow-2xl shadow-black/20">
+      <h2 class="text-sm font-semibold text-white">Límite del cociente</h2>
+
+      <label class="mt-3 block">
+        <span class="lab-field-label">Numerador f(x)</span>
+        <input
+          class="lab-input"
+          type="text"
+          [value]="numerator()"
+          (input)="onNumeratorInput($event)"
+          spellcheck="false"
+          autocomplete="off"
+          aria-label="Numerador del cociente"
+        />
+      </label>
+
+      <label class="mt-3 block">
+        <span class="lab-field-label">Denominador g(x)</span>
+        <input
+          class="lab-input"
+          type="text"
+          [value]="denominator()"
+          (input)="onDenominatorInput($event)"
+          spellcheck="false"
+          autocomplete="off"
+          aria-label="Denominador del cociente"
+        />
+      </label>
+
+      <label class="mt-3 block">
+        <span class="lab-field-label">Punto a</span>
+        <input
+          class="lab-input"
+          type="text"
+          [value]="pointInput()"
+          (input)="onPointInput($event)"
+          spellcheck="false"
+          autocomplete="off"
+          aria-label="Punto donde se calcula el límite"
+        />
+      </label>
+
+      <div class="mt-2 flex flex-wrap gap-1.5">
+        @for (preset of presets; track preset.label) {
+          <button type="button" class="lab-chip" (click)="applyPreset(preset)">
+            {{ preset.label }}
+          </button>
+        }
+      </div>
+
+      @if (!pointValid()) {
+        <p class="mt-3 text-[11px] text-rose-300">El punto a debe ser un número finito.</p>
+      }
+      @if (result().error) {
+        <p class="mt-3 text-[11px] text-rose-300">{{ result().error }}</p>
+      }
+
+      <div class="mt-4 border-t border-white/5 pt-3">
+        <p class="lab-field-label">Método</p>
+        <p class="mt-1 text-[11px] leading-relaxed text-slate-400">
+          Se comparan los límites laterales del cociente y se aplican derivadas sucesivas mientras
+          la forma siga siendo 0/0 o ∞/∞.
+        </p>
+      </div>
+    </div>
+
+    <div class="rounded-2xl border border-white/10 bg-white/[0.03] p-4 shadow-2xl shadow-black/20">
+      <h2 class="text-sm font-semibold text-white">Resultado</h2>
+      <p class="mt-2 text-lg font-semibold text-sky-200">{{ format(result().limit) }}</p>
+      <p class="mt-1 text-[11px] text-slate-400">{{ formLabel(result().form) }}</p>
+
+      <div class="mt-3 space-y-1.5 border-t border-white/5 pt-3 text-[11px]">
+        <p class="flex justify-between gap-2">
+          <span class="text-slate-500">Límite numérico</span>
+          <span class="font-mono text-slate-200">{{ format(result().numericLimit) }}</span>
+        </p>
+        <p class="flex justify-between gap-2">
+          <span class="text-slate-500">Por izquierda</span>
+          <span class="font-mono text-amber-200">{{ format(result().numericLeft) }}</span>
+        </p>
+        <p class="flex justify-between gap-2">
+          <span class="text-slate-500">Por derecha</span>
+          <span class="font-mono text-pink-200">{{ format(result().numericRight) }}</span>
+        </p>
+      </div>
+    </div>
+  </aside>
+
+  <div class="flex flex-col gap-4">
+    <div
+      class="flex min-h-[340px] flex-col overflow-hidden rounded-2xl border border-white/10 bg-white/[0.03] shadow-2xl shadow-black/25"
+    >
+      <div class="relative flex-1 overflow-hidden">
+        <div class="lab-stage absolute inset-0"></div>
+        <canvas
+          #canvas
+          class="absolute inset-0 h-full w-full"
+          tabindex="0"
+          aria-label="Gráfica del cociente f(x)/g(x) cerca del punto."
+        ></canvas>
+        <div
+          class="pointer-events-none absolute left-3 top-3 rounded-lg border border-white/10 bg-[#0b1224]/85 px-2.5 py-1.5 font-mono text-[10px] text-slate-400 backdrop-blur"
+        >
+          a = <span class="text-slate-100">{{ format(pointValid() ? point() : null) }}</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="rounded-2xl border border-white/10 bg-white/[0.03] p-4 shadow-2xl shadow-black/20">
+      <h2 class="text-sm font-semibold text-white">Pasos de L’Hôpital</h2>
+
+      @if (result().steps.length === 0) {
+        <p class="mt-2 text-[11px] text-slate-500">
+          No se necesitan derivadas: la sustitución directa determina el límite.
+        </p>
+      } @else {
+        <div class="mt-3 overflow-x-auto">
+          <table class="w-full text-left text-[11px]">
+            <thead class="text-[9px] uppercase tracking-[0.1em] text-slate-500">
+              <tr class="border-b border-white/5">
+                <th class="py-2 pr-3 font-medium">Orden</th>
+                <th class="py-2 pr-3 font-medium">f⁽ⁿ⁾(x)</th>
+                <th class="py-2 pr-3 font-medium">g⁽ⁿ⁾(x)</th>
+                <th class="py-2 pr-3 font-medium">Forma</th>
+                <th class="py-2 font-medium">Cociente</th>
+              </tr>
+            </thead>
+            <tbody class="divide-y divide-white/5">
+              @for (step of result().steps; track step.order) {
+                <tr>
+                  <td class="py-2 pr-3 font-mono text-slate-400">{{ step.order }}</td>
+                  <td class="py-2 pr-3 font-mono text-sky-200">{{ step.numerator }}</td>
+                  <td class="py-2 pr-3 font-mono text-violet-200">{{ step.denominator }}</td>
+                  <td class="py-2 pr-3 text-slate-400">{{ formLabel(step.form) }}</td>
+                  <td class="py-2 font-mono text-emerald-200">{{ format(step.limit) }}</td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+      }
+    </div>
+  </div>
+</section>

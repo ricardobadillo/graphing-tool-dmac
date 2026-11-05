@@ -1,5 +1,5 @@
 import { evaluate } from 'mathjs/number';
-import { formatFraction, formatPiFraction } from '../number-format';
+import { formatFraction, formatPiFraction } from '../shared/exact-number';
 
 export type AngleUnit = 'deg' | 'rad';
 
@@ -100,7 +100,7 @@ export function positiveAngle(angle: number): number {
 }
 
 export function parseComplex(text: string, unit: AngleUnit = 'deg'): ParsedComplex {
-  let source = text
+  const source = text
     .trim()
     .replace(/[−–—]/g, '-')
     .replace(/,/g, '.')
@@ -238,7 +238,9 @@ function formatImaginary(value: number, digits: number): string {
     return '-i';
   }
   const text = formatNumber(value, digits);
-  return text.includes('/') ? `(${text})i` : `${text}i`;
+  const needsParentheses =
+    text.includes('/') || text.includes('√') || text.includes('π') || text.includes('≈');
+  return needsParentheses ? `(${text})i` : `${text}i`;
 }
 
 export function formatAngle(angleRadians: number, unit: AngleUnit, digits = 2): string {

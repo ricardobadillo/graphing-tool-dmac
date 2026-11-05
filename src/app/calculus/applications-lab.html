@@ -1,0 +1,147 @@
+<section class="flex flex-col gap-4">
+  <div class="inline-flex flex-wrap rounded-xl border border-white/10 bg-white/[0.03] p-1">
+    @for (item of modes; track item.key) {
+      <button
+        type="button"
+        class="lab-tab"
+        [attr.data-active]="mode() === item.key"
+        (click)="setMode(item.key)"
+      >
+        {{ item.label }}
+      </button>
+    }
+  </div>
+
+  <div class="grid gap-4 lg:grid-cols-[minmax(300px,380px)_minmax(0,1fr)]">
+    <aside class="flex flex-col gap-4">
+      <div
+        class="rounded-2xl border border-white/10 bg-white/[0.03] p-4 shadow-2xl shadow-black/20"
+      >
+        <h2 class="text-sm font-semibold text-white">Funciones e intervalo</h2>
+
+        <label class="mt-3 block">
+          <span class="lab-field-label">f(x)</span>
+          <input
+            class="lab-input"
+            type="text"
+            [value]="expression()"
+            (input)="onExpressionInput($event)"
+            aria-label="Función principal"
+          />
+        </label>
+
+        @if (mode() === 'area') {
+          <label class="mt-3 block">
+            <span class="lab-field-label">g(x)</span>
+            <input
+              class="lab-input"
+              type="text"
+              [value]="secondExpression()"
+              (input)="onSecondExpressionInput($event)"
+              aria-label="Segunda función"
+            />
+          </label>
+        }
+
+        <div class="mt-3 grid grid-cols-2 gap-2">
+          <label class="block">
+            <span class="lab-field-label">a</span>
+            <input
+              class="lab-input"
+              type="text"
+              [value]="aInput()"
+              (input)="onAInput($event)"
+              aria-label="Límite inferior"
+            />
+          </label>
+          <label class="block">
+            <span class="lab-field-label">b</span>
+            <input
+              class="lab-input"
+              type="text"
+              [value]="bInput()"
+              (input)="onBInput($event)"
+              aria-label="Límite superior"
+            />
+          </label>
+        </div>
+
+        <div class="mt-2 flex flex-wrap gap-1.5">
+          <button type="button" class="lab-chip" (click)="applyPreset('x', 'x^2', '0', '1')">
+            área x vs x²
+          </button>
+          <button type="button" class="lab-chip" (click)="applyPreset('x^2', 'x', '0', '1')">
+            longitud x²
+          </button>
+          <button type="button" class="lab-chip" (click)="applyPreset('sqrt(x)', '0', '0', '1')">
+            volumen √x
+          </button>
+        </div>
+
+        @if (!intervalValid()) {
+          <p class="mt-3 text-[11px] text-rose-300">El intervalo debe cumplir a &lt; b.</p>
+        }
+      </div>
+
+      <div
+        class="rounded-2xl border border-white/10 bg-white/[0.03] p-4 shadow-2xl shadow-black/20"
+      >
+        <h2 class="text-sm font-semibold text-white">Resultado</h2>
+
+        @if (mode() === 'area') {
+          <p class="mt-2 font-mono text-2xl text-sky-200">
+            {{ format(areaResult()?.area ?? null) }}
+          </p>
+          <p class="mt-1 text-[11px] text-slate-500">área entre f y g</p>
+          @if (areaResult(); as result) {
+            <p class="mt-3 text-[10px] text-slate-400">
+              intersecciones:
+              <span class="font-mono text-slate-300">
+                {{ formatList(result.intersections) }}
+              </span>
+            </p>
+          }
+        } @else if (mode() === 'arc') {
+          <p class="mt-2 font-mono text-2xl text-sky-200">{{ format(arcResult()) }}</p>
+          <p class="mt-1 text-[11px] text-slate-500">longitud de arco</p>
+          <p
+            class="mt-3 rounded-lg bg-white/[0.03] px-2 py-1.5 font-mono text-[10px] text-slate-400"
+          >
+            L = ∫ √(1 + f′(x)²) dx
+          </p>
+        } @else {
+          <p class="mt-2 font-mono text-2xl text-sky-200">{{ format(volumeResult()) }}</p>
+          <p class="mt-1 text-[11px] text-slate-500">volumen alrededor del eje x</p>
+          <p
+            class="mt-3 rounded-lg bg-white/[0.03] px-2 py-1.5 font-mono text-[10px] text-slate-400"
+          >
+            V = π ∫ f(x)² dx
+          </p>
+        }
+      </div>
+    </aside>
+
+    <div
+      class="flex min-h-[400px] flex-col overflow-hidden rounded-2xl border border-white/10 bg-white/[0.03] shadow-2xl shadow-black/25"
+    >
+      <div class="relative flex-1 overflow-hidden">
+        <div class="lab-stage absolute inset-0"></div>
+        <canvas
+          #canvas
+          class="absolute inset-0 h-full w-full"
+          tabindex="0"
+          aria-label="Gráfica de la función y la región de aplicación."
+        ></canvas>
+      </div>
+      <div class="border-t border-white/5 px-3 py-2 font-mono text-[10px] text-slate-500">
+        @if (mode() === 'area') {
+          área sombreada entre f(x) y g(x)
+        } @else if (mode() === 'arc') {
+          longitud de la curva f(x)
+        } @else {
+          sólido generado al girar f(x) alrededor del eje x
+        }
+      </div>
+    </div>
+  </div>
+</section>

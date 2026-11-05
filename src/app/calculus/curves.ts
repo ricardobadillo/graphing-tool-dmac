@@ -1,17 +1,5 @@
-import { compile, type EvalFunction } from 'mathjs/number';
-import { describeExpressionError } from '../graphing/expression';
-
-const scope: Record<string, unknown> = {
-  x: 0,
-  theta: 0,
-  t: 0,
-  ln: Math.log,
-  log: (value: number, base?: number) =>
-    base === undefined ? Math.log10(value) : Math.log(value) / Math.log(base),
-  sec: (value: number) => 1 / Math.cos(value),
-  csc: (value: number) => 1 / Math.sin(value),
-  cot: (value: number) => 1 / Math.tan(value),
-};
+import type { EvalFunction } from 'mathjs/number';
+import { compileExpression, evaluateExpression } from '../shared/expression';
 
 export interface CurveFunction {
   expression: string;
@@ -32,34 +20,14 @@ export function normalizeCurveExpression(expression: string): string {
 
 export function compileCurve(expression: string, variable: 'theta' | 't'): CurveFunction {
   const normalized = normalizeCurveExpression(expression);
+  const result = compileExpression(normalized, [variable]);
 
-  if (!normalized) {
-    return { expression, normalized, compiled: null, error: null };
-  }
-
-  try {
-    const compiled = compile(normalized);
-    scope[variable] = 1.234;
-    const probe = compiled.evaluate(scope);
-
-    if (typeof probe !== 'number') {
-      return {
-        expression,
-        normalized,
-        compiled: null,
-        error: 'La expresión debe devolver un número.',
-      };
-    }
-
-    return { expression, normalized, compiled, error: null };
-  } catch (error) {
-    return {
-      expression,
-      normalized,
-      compiled: null,
-      error: describeExpressionError(error),
-    };
-  }
+  return {
+    expression,
+    normalized: result.normalized,
+    compiled: result.compiled,
+    error: result.error,
+  };
 }
 
 export function evaluateCurve(
@@ -67,13 +35,7 @@ export function evaluateCurve(
   variable: 'theta' | 't',
   value: number,
 ): number {
-  scope[variable] = value;
-  try {
-    const result = compiled.evaluate(scope);
-    return typeof result === 'number' ? result : Number.NaN;
-  } catch {
-    return Number.NaN;
-  }
+  return evaluateExpression(compiled, { [variable]: value });
 }
 
 export interface CurvePoint {

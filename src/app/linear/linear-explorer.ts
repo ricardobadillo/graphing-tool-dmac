@@ -10,8 +10,10 @@ import {
   signal,
   viewChild,
 } from '@angular/core';
-import { formatNumber } from '../complex/complex';
-import { formatDecimal } from '../number-format';
+import { CanvasKeyboard } from '../shared/canvas-keyboard';
+import { CanvasSurface } from '../shared/canvas-surface';
+import { clamp, niceStep } from '../shared/math-utils';
+import { formatDecimal, formatExact } from '../shared/exact-number';
 import {
   addVec,
   angleBetween,
@@ -113,20 +115,8 @@ const MAX_PIXELS_PER_UNIT = 4_000;
 const GRID_TARGET_PX = 78;
 const EPS = 1e-9;
 
-function clamp(value: number, min: number, max: number): number {
-  return Math.min(Math.max(value, min), max);
-}
-
 function snap(value: number): number {
   return Math.round(value) + 0.5;
-}
-
-function niceStep(target: number): number {
-  const raw = Math.max(target, Number.MIN_VALUE);
-  const power = 10 ** Math.floor(Math.log10(raw));
-  const normalized = raw / power;
-  const factor = normalized < 1.5 ? 1 : normalized < 3.5 ? 2 : normalized < 7.5 ? 5 : 10;
-  return factor * power;
 }
 
 function samePoint(a: Vec2, b: Vec2): boolean {
@@ -135,6 +125,7 @@ function samePoint(a: Vec2, b: Vec2): boolean {
 
 @Component({
   selector: 'app-linear-explorer',
+  imports: [CanvasKeyboard],
   templateUrl: './linear-explorer.html',
   styleUrl: './linear-explorer.css',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -719,14 +710,21 @@ export class LinearExplorer {
     )}] · y ∈ [${formatDecimal(center.y - halfH)}, ${formatDecimal(center.y + halfH)}]`;
   });
 
-  private ctx: CanvasRenderingContext2D | null = null;
-  private width = 0;
-  private height = 0;
-  private dpr = 1;
-  private resizeObserver: ResizeObserver | null = null;
-  private frame = 0;
-  private fallback = 0;
+  private surface: CanvasSurface | null = null;
   private viewInitialized = false;
+
+  private get ctx(): CanvasRenderingContext2D | null {
+    return this.surface?.context ?? null;
+  }
+  private get width(): number {
+    return this.surface?.width ?? 0;
+  }
+  private get height(): number {
+    return this.surface?.height ?? 0;
+  }
+  private get dpr(): number {
+    return this.surface?.pixelRatio ?? 1;
+  }
   private dragTarget: DragTarget | null = null;
   private panStart: { px: number; py: number; cx: number; cy: number; moved: boolean } | null =
     null;
@@ -766,22 +764,28 @@ export class LinearExplorer {
 
       const canvas = this.canvasRef().nativeElement;
       const container = canvas.parentElement;
-      this.ctx = canvas.getContext('2d');
-
-      if (container && typeof ResizeObserver !== 'undefined') {
-        this.resizeObserver = new ResizeObserver(() => this.resize());
-        this.resizeObserver.observe(container);
+      if (!container) {
+        return;
       }
 
+      this.surface = new CanvasSurface({
+        canvas,
+        container,
+        draw: () => this.draw(),
+        onResize: (size) => {
+          this.size.set(size);
+          if (!this.viewInitialized && size.w > 20 && size.h > 20) {
+            this.viewInitialized = true;
+            this.fitView();
+          }
+        },
+      });
       canvas.addEventListener('wheel', this.onWheel, { passive: false });
-      this.resize();
-      this.fitView();
+      this.surface.resize();
 
       this.destroyRef.onDestroy(() => {
-        this.resizeObserver?.disconnect();
         canvas.removeEventListener('wheel', this.onWheel);
-        cancelAnimationFrame(this.frame);
-        cancelAnimationFrame(this.fallback);
+        this.surface?.destroy();
       });
     });
   }
@@ -920,6 +924,11 @@ export class LinearExplorer {
     this.s22Input.set(preset.b2);
     this.s23Input.set(preset.c2);
     this.fitView();
+  }
+
+  panBy(dx: number, dy: number): void {
+    const ppu = this.pixelsPerUnit();
+    this.center.update((center) => ({ x: center.x - dx / ppu, y: center.y + dy / ppu }));
   }
 
   zoomBy(factor: number, anchor?: { x: number; y: number }): void {
@@ -1173,55 +1182,11 @@ export class LinearExplorer {
   // ------------------------------------------------------------------- canvas
 
   private resize(): void {
-    const canvas = this.canvasRef().nativeElement;
-    const container = canvas.parentElement;
-    if (!container) {
-      return;
-    }
-
-    const rect = container.getBoundingClientRect();
-    const width = Math.max(1, Math.round(rect.width));
-    const height = Math.max(1, Math.round(rect.height));
-    const dpr = Math.min(window.devicePixelRatio || 1, 2.5);
-
-    if (width === this.width && height === this.height && dpr === this.dpr) {
-      return;
-    }
-
-    this.width = width;
-    this.height = height;
-    this.dpr = dpr;
-    canvas.width = Math.round(width * dpr);
-    canvas.height = Math.round(height * dpr);
-    this.size.set({ w: width, h: height });
-
-    if (!this.viewInitialized && width > 20 && height > 20) {
-      this.viewInitialized = true;
-      this.fitView();
-    }
-
-    this.scheduleDraw();
+    this.surface?.resize();
   }
 
   private scheduleDraw(): void {
-    if (!this.ctx || this.frame) {
-      return;
-    }
-
-    this.frame = requestAnimationFrame(() => {
-      cancelAnimationFrame(this.frame);
-      clearTimeout(this.fallback);
-      this.frame = 0;
-      this.fallback = 0;
-      this.draw();
-    });
-
-    this.fallback = window.setTimeout(() => {
-      cancelAnimationFrame(this.frame);
-      this.frame = 0;
-      this.fallback = 0;
-      this.draw();
-    }, 90);
+    this.surface?.requestDraw();
   }
 
   private draw(): void {
@@ -1903,7 +1868,7 @@ export class LinearExplorer {
   }
 
   formatValue(value: number, digits = 2): string {
-    return formatNumber(value, digits).replace(/-/g, '−');
+    return formatExact(value, { digits });
   }
 
   private origin(): Vec2 {

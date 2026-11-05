@@ -101,6 +101,6 @@ describe('formato', () => {
   it('expresa resultados racionales como fracciones', () => {
     expect(formatComplex({ re: 0.5, im: -0.75 })).toBe('1/2 − (3/4)i');
     expect(formatAngle(Math.PI / 6, 'rad')).toBe('π/6 rad');
-    expect(formatPolar({ re: 3, im: 4 }, 'rad')).toBe('5 ∠ 0.93 rad');
+    expect(formatPolar({ re: 3, im: 4 }, 'rad')).toBe('5 ∠ ≈ 0.93 rad');
   });
 });

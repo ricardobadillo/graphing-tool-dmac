@@ -2,28 +2,7 @@ import { Component, computed, inject } from '@angular/core';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { NavigationEnd, Router, RouterLink } from '@angular/router';
 import { filter, map } from 'rxjs/operators';
-
-const MATH_ROUTES = [
-  '/',
-  '/matematicas',
-  '/calculo',
-  '/analisis',
-  '/algebra',
-  '/conjuntos',
-  '/complejos',
-  '/gaussianos',
-  '/estadistica',
-  '/optimizacion',
-  '/geometria',
-];
-
-const PROGRAMMING_ROUTES = ['/programacion', '/estructuras', '/algoritmos'];
-
-function matchesPath(path: string, routes: string[]): boolean {
-  return routes.some((route) =>
-    route === '/' ? path === '/' : path === route || path.startsWith(`${route}/`),
-  );
-}
+import { sectionForPath, type SectionKey } from './tools';
 
 @Component({
   selector: 'app-site-nav',
@@ -146,15 +125,5 @@ export class SiteNav {
     { initialValue: this.router.url },
   );
 
-  readonly activeSection = computed<'math' | 'programming' | null>(() => {
-    const path = this.currentUrl().split(/[?#]/)[0].replace(/\/+$/, '') || '/';
-
-    if (matchesPath(path, PROGRAMMING_ROUTES)) {
-      return 'programming';
-    }
-    if (matchesPath(path, MATH_ROUTES)) {
-      return 'math';
-    }
-    return null;
-  });
+  readonly activeSection = computed<SectionKey | null>(() => sectionForPath(this.currentUrl()));
 }

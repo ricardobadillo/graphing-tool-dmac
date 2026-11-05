@@ -10,24 +10,71 @@ import {
   signal,
   viewChild,
 } from '@angular/core';
-import { CURVE_PALETTE, createPlotFunction, evaluateAt, type PlotFunction } from './expression';
+import {
+  CURVE_PALETTE,
+  compileExpression,
+  createPlotFunction,
+  evaluateAt,
+  type PlotFunction,
+} from '../shared/expression';
+import { CanvasKeyboard } from '../shared/canvas-keyboard';
+import { CanvasSurface } from '../shared/canvas-surface';
+import { clamp, niceStep } from '../shared/math-utils';
 import { buildShareUrl, copyShareUrl, decodeShare } from '../share';
-import { formatDecimal, formatFraction } from '../number-format';
+import { formatDecimal, formatExact, formatFraction } from '../shared/exact-number';
+import {
+  analyzeCurve,
+  type CurveAnalysis,
+  type ExtremaPoint,
+  type HorizontalAsymptote,
+  type MonotonicInterval,
+} from './curve-analysis';
+import type { EvalFunction } from 'mathjs/number';
 
 const MIN_PIXELS_PER_UNIT = 0.0005;
 const MAX_PIXELS_PER_UNIT = 200_000;
 const GRID_TARGET_PX = 84;
 const INITIAL_X_RANGE = 22;
 
+type InequalityOperator = '>' | '>=' | '<' | '<=';
+
+type ParameterKey = 'a' | 'b' | 'c' | 'd';
+
+interface PlotParameters {
+  a: number;
+  b: number;
+  c: number;
+  d: number;
+  [key: string]: number;
+}
+
+interface PlotInequality {
+  id: number;
+  expression: string;
+  operator: InequalityOperator;
+  color: string;
+  visible: boolean;
+  compiled: EvalFunction | null;
+  error: string | null;
+}
+
+interface FunctionAnalysis {
+  fn: PlotFunction & { compiled: EvalFunction };
+  analysis: CurveAnalysis;
+}
+
 interface PlotShareData {
   functions: { expression: string; color: string; visible: boolean }[];
   centerX: number;
   centerY: number;
   pixelsPerUnit: number;
-}
-
-function clamp(value: number, min: number, max: number): number {
-  return Math.min(Math.max(value, min), max);
+  parameters?: PlotParameters;
+  inequalities?: {
+    expression: string;
+    operator: InequalityOperator;
+    color: string;
+    visible: boolean;
+  }[];
 }
 
 /** Alinea una coordenada al píxel para que las líneas de 1px se vean nítidas. */
@@ -35,13 +82,19 @@ function snapToPixel(value: number): number {
   return Math.round(value) + 0.5;
 }
 
-/** Devuelve un paso "bonito" (1, 2 o 5 × 10^n) cercano al objetivo. */
-function niceStep(target: number): number {
-  const raw = Math.max(target, Number.MIN_VALUE);
-  const power = 10 ** Math.floor(Math.log10(raw));
-  const normalized = raw / power;
-  const factor = normalized < 1.5 ? 1 : normalized < 3.5 ? 2 : normalized < 7.5 ? 5 : 10;
-  return factor * power;
+function hexToRgba(hex: string, alpha: number): string {
+  const normalized = hex.replace('#', '');
+  const value =
+    normalized.length === 3
+      ? normalized
+          .split('')
+          .map((character) => character + character)
+          .join('')
+      : normalized;
+  const red = Number.parseInt(value.slice(0, 2), 16);
+  const green = Number.parseInt(value.slice(2, 4), 16);
+  const blue = Number.parseInt(value.slice(4, 6), 16);
+  return `rgba(${red}, ${green}, ${blue}, ${alpha})`;
 }
 
 interface Viewport {
@@ -61,6 +114,7 @@ interface PointerPosition {
 
 @Component({
   selector: 'app-function-plotter',
+  imports: [CanvasKeyboard],
   templateUrl: './function-plotter.html',
   styleUrl: './function-plotter.css',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -78,6 +132,25 @@ export class FunctionPlotter {
     createPlotFunction(2, 'x^2 / 4 - 2', CURVE_PALETTE[1]),
   ]);
 
+  readonly parameters = signal<PlotParameters>({ a: 1, b: 1, c: 0, d: 0 });
+  readonly parameterKeys: ParameterKey[] = ['a', 'b', 'c', 'd'];
+  readonly animating = signal(false);
+  readonly animationParameter = signal<ParameterKey>('c');
+  private readonly animationBlocked = signal(false);
+  private readonly analysisInput = signal<{
+    range: { xMin: number; xMax: number };
+    parameters: PlotParameters;
+  }>({
+    range: { xMin: -10, xMax: 10 },
+    parameters: { a: 1, b: 1, c: 0, d: 0 },
+  });
+  private analysisTimer: ReturnType<typeof setTimeout> | null = null;
+  readonly inequalities = signal<PlotInequality[]>([]);
+  private nextInequalityId = 1;
+  private animationTimer: ReturnType<typeof setInterval> | null = null;
+  private animationStart = 0;
+  private animationOrigin = 0;
+
   private readonly center = signal<Viewport>({ x: 0, y: 0 });
   readonly pixelsPerUnit = signal(48);
   readonly size = signal<Size>({ w: 0, h: 0 });
@@ -87,7 +160,59 @@ export class FunctionPlotter {
   readonly toast = signal<string | null>(null);
   private toastTimer: number | null = null;
 
-  readonly presets = ['sin(x)', 'x^2', '1 / x', 'e^x', 'ln(x)', 'sqrt(x)'];
+  readonly parameterUsers = computed<string[]>(() => {
+    const key = this.animationParameter();
+    const pattern = new RegExp(`\\b${key}\\b`);
+    return this.functions()
+      .filter((fn) => fn.visible && fn.compiled && pattern.test(fn.expression))
+      .map((fn) => fn.expression);
+  });
+
+  readonly animationWarning = computed<string | null>(() => {
+    if (!this.animationBlocked() || this.parameterUsers().length > 0) {
+      return null;
+    }
+    return `Ninguna función visible usa "${this.animationParameter()}". Añade una expresión que lo incluya o usa la plantilla.`;
+  });
+
+  readonly presets = [
+    'sin(x)',
+    'x^2',
+    '1 / x',
+    'e^x',
+    'ln(x)',
+    'sqrt(x)',
+    'a*sin(b*x + c) + d',
+    'piecewise(x < 0, -x, x >= 0, x)',
+  ];
+
+  readonly visibleRange = computed(() => {
+    const { w } = this.size();
+    const pixelsPerUnit = this.pixelsPerUnit();
+    const center = this.center();
+    if (w <= 0 || pixelsPerUnit <= 0) {
+      return { xMin: -10, xMax: 10 };
+    }
+    const half = w / (2 * pixelsPerUnit);
+    return { xMin: center.x - half, xMax: center.x + half };
+  });
+
+  readonly analyses = computed<FunctionAnalysis[]>(() => {
+    const { range, parameters } = this.analysisInput();
+    return this.functions()
+      .filter(
+        (fn): fn is PlotFunction & { compiled: EvalFunction } => fn.visible && fn.compiled !== null,
+      )
+      .map((fn) => ({
+        fn,
+        analysis: analyzeCurve(
+          (x) => evaluateAt(fn.compiled, x, parameters),
+          range.xMin,
+          range.xMax,
+          760,
+        ),
+      }));
+  });
 
   readonly hoverData = computed(() => {
     const hover = this.hover();
@@ -98,13 +223,14 @@ export class FunctionPlotter {
     }
 
     const worldX = this.center().x + (hover.x - w / 2) / pixelsPerUnit;
+    const parameters = this.parameters();
     const values = this.functions()
       .filter((fn) => fn.visible && fn.compiled)
       .map((fn) => ({
         id: fn.id,
         color: fn.color,
         expression: fn.expression,
-        value: evaluateAt(fn.compiled!, worldX),
+        value: evaluateAt(fn.compiled!, worldX, parameters),
       }));
 
     return { x: worldX, values };
@@ -127,19 +253,25 @@ export class FunctionPlotter {
     ].join('  ·  ');
   });
 
-  private ctxBase: CanvasRenderingContext2D | null = null;
-  private ctxOverlay: CanvasRenderingContext2D | null = null;
-
-  private width = 0;
-  private height = 0;
-  private pixelRatio = 1;
-
-  private resizeObserver: ResizeObserver | null = null;
-  private baseFrame = 0;
-  private overlayFrame = 0;
-  private baseFallback = 0;
-  private overlayFallback = 0;
+  private baseSurface: CanvasSurface | null = null;
+  private overlaySurface: CanvasSurface | null = null;
   private viewInitialized = false;
+
+  private get ctxBase(): CanvasRenderingContext2D | null {
+    return this.baseSurface?.context ?? null;
+  }
+  private get ctxOverlay(): CanvasRenderingContext2D | null {
+    return this.overlaySurface?.context ?? null;
+  }
+  private get width(): number {
+    return this.baseSurface?.width ?? 0;
+  }
+  private get height(): number {
+    return this.baseSurface?.height ?? 0;
+  }
+  private get pixelRatio(): number {
+    return this.baseSurface?.pixelRatio ?? 1;
+  }
 
   private readonly pointers = new Map<number, PointerPosition>();
   private lastPan: PointerPosition | null = null;
@@ -161,6 +293,9 @@ export class FunctionPlotter {
   constructor() {
     effect(() => {
       this.functions();
+      this.parameters();
+      this.inequalities();
+      this.analyses();
       this.center();
       this.pixelsPerUnit();
       this.size();
@@ -170,10 +305,23 @@ export class FunctionPlotter {
     effect(() => {
       this.hover();
       this.functions();
+      this.parameters();
       this.center();
       this.pixelsPerUnit();
       this.size();
       this.scheduleOverlayDraw();
+    });
+
+    effect(() => {
+      const range = this.visibleRange();
+      const parameters = this.parameters();
+      if (this.analysisTimer !== null) {
+        clearTimeout(this.analysisTimer);
+      }
+      this.analysisTimer = setTimeout(() => {
+        this.analysisInput.set({ range, parameters: { ...parameters } });
+        this.analysisTimer = null;
+      }, 140);
     });
 
     afterNextRender(() => {
@@ -183,27 +331,43 @@ export class FunctionPlotter {
       }
 
       const base = this.baseCanvas().nativeElement;
+      const overlay = this.overlayCanvas().nativeElement;
       const container = base.parentElement;
-
-      this.ctxBase = base.getContext('2d');
-      this.ctxOverlay = this.overlayCanvas().nativeElement.getContext('2d');
-
-      if (container && typeof ResizeObserver !== 'undefined') {
-        this.resizeObserver = new ResizeObserver(() => this.resize());
-        this.resizeObserver.observe(container);
+      if (!container) {
+        return;
       }
 
+      this.baseSurface = new CanvasSurface({
+        canvas: base,
+        container,
+        draw: () => this.drawBase(),
+        onResize: (size) => {
+          this.size.set(size);
+          if (!this.viewInitialized && size.w > 20 && size.h > 20) {
+            this.viewInitialized = true;
+            this.resetView();
+          }
+        },
+      });
+      this.overlaySurface = new CanvasSurface({
+        canvas: overlay,
+        container,
+        draw: () => this.drawOverlay(),
+      });
+
       base.addEventListener('wheel', this.onWheel, { passive: false });
-      this.resize();
+      this.baseSurface.resize();
+      this.overlaySurface.resize();
       this.restoreFromShareLink();
 
       this.destroyRef.onDestroy(() => {
-        this.resizeObserver?.disconnect();
         base.removeEventListener('wheel', this.onWheel);
-        cancelAnimationFrame(this.baseFrame);
-        cancelAnimationFrame(this.overlayFrame);
-        clearTimeout(this.baseFallback);
-        clearTimeout(this.overlayFallback);
+        this.baseSurface?.destroy();
+        this.overlaySurface?.destroy();
+        this.stopAnimation();
+        if (this.analysisTimer !== null) {
+          clearTimeout(this.analysisTimer);
+        }
         if (this.toastTimer !== null) {
           clearTimeout(this.toastTimer);
         }
@@ -249,6 +413,206 @@ export class FunctionPlotter {
 
   onColorInput(id: number, event: Event): void {
     this.updateColor(id, (event.target as HTMLInputElement).value);
+  }
+
+  setParameter(key: ParameterKey, event: Event): void {
+    const value = Number((event.target as HTMLInputElement).value);
+    if (!Number.isFinite(value)) {
+      return;
+    }
+    this.parameters.update((parameters) => ({ ...parameters, [key]: value }));
+  }
+
+  resetParameters(): void {
+    this.stopAnimation();
+    this.parameters.set({ a: 1, b: 1, c: 0, d: 0 });
+  }
+
+  useParameterTemplate(): void {
+    this.addFunction('a*sin(b*x + c) + d');
+  }
+
+  setAnimationParameter(event: Event): void {
+    this.stopAnimation();
+    const key = (event.target as HTMLSelectElement).value as ParameterKey;
+    if (this.parameterKeys.includes(key)) {
+      this.animationParameter.set(key);
+      this.animationBlocked.set(false);
+    }
+  }
+
+  toggleAnimation(): void {
+    if (this.animating()) {
+      this.stopAnimation();
+      return;
+    }
+
+    if (this.parameterUsers().length === 0) {
+      this.animationBlocked.set(true);
+      return;
+    }
+
+    this.animationBlocked.set(false);
+    this.animationStart = performance.now();
+    this.animationOrigin = this.parameters()[this.animationParameter()];
+    this.animating.set(true);
+
+    if (this.animationTimer !== null) {
+      clearInterval(this.animationTimer);
+    }
+    this.animationTimer = setInterval(() => {
+      const elapsed = (performance.now() - this.animationStart) / 1000;
+      const key = this.animationParameter();
+      this.parameters.update((parameters) => ({
+        ...parameters,
+        [key]: this.animationOrigin + elapsed * 1.4,
+      }));
+    }, 32);
+  }
+
+  private stopAnimation(): void {
+    this.animating.set(false);
+    if (this.animationTimer !== null) {
+      clearInterval(this.animationTimer);
+      this.animationTimer = null;
+    }
+  }
+
+  addInequality(expression = 'x^2', operator: InequalityOperator = '>'): void {
+    const id = this.nextInequalityId++;
+    const color =
+      CURVE_PALETTE[(this.inequalities().length + 3) % CURVE_PALETTE.length] ?? CURVE_PALETTE[0];
+    this.inequalities.update((list) => [
+      ...list,
+      this.createInequality(id, expression, operator, color),
+    ]);
+  }
+
+  removeInequality(id: number): void {
+    this.inequalities.update((list) => list.filter((inequality) => inequality.id !== id));
+  }
+
+  updateInequalityExpression(id: number, event: Event): void {
+    const expression = (event.target as HTMLInputElement).value;
+    this.inequalities.update((list) =>
+      list.map((inequality) =>
+        inequality.id === id
+          ? this.createInequality(id, expression, inequality.operator, inequality.color)
+          : inequality,
+      ),
+    );
+  }
+
+  updateInequalityOperator(id: number, event: Event): void {
+    const operator = (event.target as HTMLSelectElement).value as InequalityOperator;
+    this.inequalities.update((list) =>
+      list.map((inequality) =>
+        inequality.id === id
+          ? this.createInequality(id, inequality.expression, operator, inequality.color)
+          : inequality,
+      ),
+    );
+  }
+
+  updateInequalityColor(id: number, event: Event): void {
+    const color = (event.target as HTMLInputElement).value;
+    this.inequalities.update((list) =>
+      list.map((inequality) => (inequality.id === id ? { ...inequality, color } : inequality)),
+    );
+  }
+
+  toggleInequalityVisibility(id: number): void {
+    this.inequalities.update((list) =>
+      list.map((inequality) =>
+        inequality.id === id ? { ...inequality, visible: !inequality.visible } : inequality,
+      ),
+    );
+  }
+
+  private createInequality(
+    id: number,
+    expression: string,
+    operator: InequalityOperator,
+    color: string,
+  ): PlotInequality {
+    const result = compileExpression(expression, ['x']);
+    return {
+      id,
+      expression,
+      operator,
+      color,
+      visible: true,
+      compiled: result.compiled,
+      error: result.error,
+    };
+  }
+
+  formatAnalysisX(value: number): string {
+    return formatExact(value, { digits: 3 });
+  }
+
+  formatAnalysisY(value: number): string {
+    return formatExact(value, { digits: 3 });
+  }
+
+  formatAnalysisInterval(from: number, to: number): string {
+    return `${this.formatAnalysisX(from)} → ${this.formatAnalysisX(to)}`;
+  }
+
+  formatRoots(values: number[]): string {
+    if (values.length === 0) {
+      return '—';
+    }
+    const shown = values.slice(0, 6).map((value) => this.formatAnalysisX(value));
+    const extra = values.length - shown.length;
+    return extra > 0 ? `${shown.join(', ')} (+${extra})` : shown.join(', ');
+  }
+
+  formatExtremaPoints(points: ExtremaPoint[]): string {
+    if (points.length === 0) {
+      return '—';
+    }
+    const shown = points
+      .slice(0, 5)
+      .map((point) => `${this.formatAnalysisX(point.x)} → ${this.formatAnalysisY(point.y)}`);
+    const extra = points.length - shown.length;
+    return extra > 0 ? `${shown.join(', ')} (+${extra})` : shown.join(', ');
+  }
+
+  formatMonotonicIntervals(intervals: MonotonicInterval[]): string {
+    if (intervals.length === 0) {
+      return '—';
+    }
+    const shown = intervals
+      .slice(0, 4)
+      .map(
+        (interval) =>
+          `${this.formatAnalysisInterval(interval.from, interval.to)} ${
+            interval.direction === 'increasing' ? '↗' : '↘'
+          }`,
+      );
+    const extra = intervals.length - shown.length;
+    return extra > 0 ? `${shown.join(' · ')} (+${extra})` : shown.join(' · ');
+  }
+
+  formatAsymptotes(values: number[]): string {
+    if (values.length === 0) {
+      return '—';
+    }
+    return values
+      .slice(0, 5)
+      .map((value) => this.formatAnalysisX(value))
+      .join(', ');
+  }
+
+  formatHorizontalAsymptotes(values: HorizontalAsymptote[]): string {
+    if (values.length === 0) {
+      return '—';
+    }
+    return values
+      .slice(0, 4)
+      .map((value) => `y = ${this.formatAnalysisY(value.y)}`)
+      .join(' · ');
   }
 
   zoomBy(factor: number, anchor?: PointerPosition): void {
@@ -311,6 +675,13 @@ export class FunctionPlotter {
       centerX: this.center().x,
       centerY: this.center().y,
       pixelsPerUnit: this.pixelsPerUnit(),
+      parameters: this.parameters(),
+      inequalities: this.inequalities().map((inequality) => ({
+        expression: inequality.expression,
+        operator: inequality.operator,
+        color: inequality.color,
+        visible: inequality.visible,
+      })),
     };
   }
 
@@ -352,6 +723,37 @@ export class FunctionPlotter {
     ) {
       this.center.set({ x: data.centerX, y: data.centerY });
       this.pixelsPerUnit.set(clamp(data.pixelsPerUnit, MIN_PIXELS_PER_UNIT, MAX_PIXELS_PER_UNIT));
+    }
+
+    if (data.parameters && typeof data.parameters === 'object') {
+      const parameters = data.parameters;
+      this.parameters.set({
+        a: Number.isFinite(parameters.a) ? parameters.a : 1,
+        b: Number.isFinite(parameters.b) ? parameters.b : 1,
+        c: Number.isFinite(parameters.c) ? parameters.c : 0,
+        d: Number.isFinite(parameters.d) ? parameters.d : 0,
+      });
+    }
+
+    if (Array.isArray(data.inequalities)) {
+      const restored = data.inequalities
+        .filter(
+          (item) =>
+            item !== null &&
+            typeof item === 'object' &&
+            typeof item.expression === 'string' &&
+            typeof item.color === 'string' &&
+            ['>', '>=', '<', '<='].includes(item.operator),
+        )
+        .map((item) =>
+          this.createInequality(
+            this.nextInequalityId++,
+            item.expression,
+            item.operator,
+            item.color,
+          ),
+        );
+      this.inequalities.set(restored);
     }
 
     this.showToast('Estado restaurado desde el enlace');
@@ -455,7 +857,7 @@ export class FunctionPlotter {
   // ------------------------------------------------------------- utilidades
 
   formatCoordinate(value: number): string {
-    return formatDecimal(value, 3);
+    return formatExact(value, { digits: 3 });
   }
 
   formatCoord(value: number): string {
@@ -470,7 +872,7 @@ export class FunctionPlotter {
     };
   }
 
-  private panBy(dx: number, dy: number): void {
+  panBy(dx: number, dy: number): void {
     const pixelsPerUnit = this.pixelsPerUnit();
     this.center.update((center) => ({
       x: center.x - dx / pixelsPerUnit,
@@ -493,83 +895,16 @@ export class FunctionPlotter {
   // --------------------------------------------------------------- canvas
 
   private resize(): void {
-    const base = this.baseCanvas().nativeElement;
-    const overlay = this.overlayCanvas().nativeElement;
-    const container = base.parentElement;
-    if (!container) {
-      return;
-    }
-
-    const rect = container.getBoundingClientRect();
-    const width = Math.max(1, Math.round(rect.width));
-    const height = Math.max(1, Math.round(rect.height));
-    const pixelRatio = Math.min(window.devicePixelRatio || 1, 2.5);
-
-    if (width === this.width && height === this.height && pixelRatio === this.pixelRatio) {
-      return;
-    }
-
-    this.width = width;
-    this.height = height;
-    this.pixelRatio = pixelRatio;
-
-    for (const canvas of [base, overlay]) {
-      canvas.width = Math.round(width * pixelRatio);
-      canvas.height = Math.round(height * pixelRatio);
-    }
-
-    this.size.set({ w: width, h: height });
-
-    if (!this.viewInitialized && width > 20 && height > 20) {
-      this.viewInitialized = true;
-      this.resetView();
-    }
-
-    this.scheduleBaseDraw();
-    this.scheduleOverlayDraw();
+    this.baseSurface?.resize();
+    this.overlaySurface?.resize();
   }
 
   private scheduleBaseDraw(): void {
-    if (!this.ctxBase || this.baseFrame) {
-      return;
-    }
-
-    this.baseFrame = requestAnimationFrame(() => {
-      cancelAnimationFrame(this.baseFrame);
-      clearTimeout(this.baseFallback);
-      this.baseFrame = 0;
-      this.baseFallback = 0;
-      this.drawBase();
-    });
-
-    // Respaldo para pestañas o entornos donde rAF está limitado.
-    this.baseFallback = window.setTimeout(() => {
-      cancelAnimationFrame(this.baseFrame);
-      this.baseFrame = 0;
-      this.baseFallback = 0;
-      this.drawBase();
-    }, 90);
+    this.baseSurface?.requestDraw();
   }
 
   private scheduleOverlayDraw(): void {
-    if (!this.ctxOverlay || this.overlayFrame) {
-      return;
-    }
-
-    this.overlayFrame = requestAnimationFrame(() => {
-      cancelAnimationFrame(this.overlayFrame);
-      clearTimeout(this.overlayFallback);
-      this.overlayFrame = 0;
-      this.overlayFallback = 0;
-      this.drawOverlay();
-    });
-
-    this.overlayFallback = window.setTimeout(() => {
-      cancelAnimationFrame(this.overlayFrame);
-      this.overlayFrame = 0;
-      this.overlayFallback = 0;
-      this.drawOverlay();
-    }, 90);
+    this.overlaySurface?.requestDraw();
   }
 
   private drawBase(): void {
@@ -583,7 +918,175 @@ export class FunctionPlotter {
 
     this.drawGrid(ctx);
     this.drawAxes(ctx);
+    this.drawInequalities(ctx);
     this.drawCurves(ctx);
+    this.drawAnalysisMarkers(ctx);
+  }
+
+  private drawInequalities(ctx: CanvasRenderingContext2D): void {
+    const pixelsPerUnit = this.pixelsPerUnit();
+    const center = this.center();
+    const parameters = this.parameters();
+
+    for (const inequality of this.inequalities()) {
+      if (!inequality.visible || !inequality.compiled) {
+        continue;
+      }
+
+      const fill = hexToRgba(inequality.color, 0.12);
+      ctx.fillStyle = fill;
+
+      for (let px = 0; px <= this.width; px += 1) {
+        const worldX = center.x + (px - this.width / 2) / pixelsPerUnit;
+        const value = evaluateAt(inequality.compiled, worldX, parameters);
+        if (!Number.isFinite(value)) {
+          continue;
+        }
+
+        const rawY = this.screenY(value);
+        const py = clamp(rawY, 0, this.height);
+
+        if (inequality.operator === '>' || inequality.operator === '>=') {
+          if (rawY > 0) {
+            ctx.fillRect(px, 0, 1, py);
+          }
+        } else if (rawY < this.height) {
+          ctx.fillRect(px, py, 1, this.height - py);
+        }
+      }
+
+      if (inequality.operator === '>' || inequality.operator === '<') {
+        ctx.setLineDash([5, 4]);
+      } else {
+        ctx.setLineDash([]);
+      }
+
+      ctx.strokeStyle = inequality.color;
+      ctx.lineWidth = 1.4;
+      ctx.beginPath();
+      let previousY: number | null = null;
+      const jumpLimit = Math.max(this.height * 1.25, 160);
+
+      for (let px = 0; px <= this.width; px += 1.5) {
+        const worldX = center.x + (px - this.width / 2) / pixelsPerUnit;
+        const value = evaluateAt(inequality.compiled, worldX, parameters);
+        if (!Number.isFinite(value)) {
+          previousY = null;
+          continue;
+        }
+        const py = this.screenY(value);
+        if (previousY === null || Math.abs(py - previousY) > jumpLimit) {
+          ctx.moveTo(px, py);
+        } else {
+          ctx.lineTo(px, py);
+        }
+        previousY = py;
+      }
+      ctx.stroke();
+      ctx.setLineDash([]);
+    }
+  }
+
+  private drawAnalysisMarkers(ctx: CanvasRenderingContext2D): void {
+    for (const item of this.analyses()) {
+      const color = item.fn.color;
+      const analysis = item.analysis;
+
+      ctx.save();
+      ctx.strokeStyle = color;
+      ctx.fillStyle = color;
+      ctx.lineWidth = 1.2;
+
+      for (const asymptote of analysis.verticalAsymptotes) {
+        const x = this.screenX(asymptote);
+        if (x < 0 || x > this.width) {
+          continue;
+        }
+        ctx.globalAlpha = 0.45;
+        ctx.setLineDash([4, 5]);
+        ctx.beginPath();
+        ctx.moveTo(snapToPixel(x), 0);
+        ctx.lineTo(snapToPixel(x), this.height);
+        ctx.stroke();
+      }
+
+      for (const asymptote of analysis.horizontalAsymptotes) {
+        const y = this.screenY(asymptote.y);
+        if (y < 0 || y > this.height) {
+          continue;
+        }
+        ctx.globalAlpha = 0.35;
+        ctx.setLineDash([7, 6]);
+        ctx.beginPath();
+        ctx.moveTo(0, snapToPixel(y));
+        ctx.lineTo(this.width, snapToPixel(y));
+        ctx.stroke();
+      }
+
+      ctx.globalAlpha = 1;
+      ctx.setLineDash([]);
+
+      for (const root of analysis.roots) {
+        const x = this.screenX(root);
+        if (x < -8 || x > this.width + 8) {
+          continue;
+        }
+        ctx.beginPath();
+        ctx.arc(x, this.screenY(0), 3.6, 0, Math.PI * 2);
+        ctx.fillStyle = '#080d19';
+        ctx.fill();
+        ctx.strokeStyle = color;
+        ctx.stroke();
+      }
+
+      for (const point of analysis.maxima) {
+        this.drawMarker(ctx, point.x, point.y, 'max', color);
+      }
+      for (const point of analysis.minima) {
+        this.drawMarker(ctx, point.x, point.y, 'min', color);
+      }
+      for (const point of analysis.inflections) {
+        const value = evaluateAt(item.fn.compiled, point, this.parameters());
+        if (Number.isFinite(value)) {
+          this.drawMarker(ctx, point, value, 'inflection', color);
+        }
+      }
+
+      ctx.restore();
+    }
+  }
+
+  private drawMarker(
+    ctx: CanvasRenderingContext2D,
+    xValue: number,
+    yValue: number,
+    kind: 'max' | 'min' | 'inflection',
+    color: string,
+  ): void {
+    const x = this.screenX(xValue);
+    const y = this.screenY(yValue);
+    if (x < -10 || x > this.width + 10 || y < -10 || y > this.height + 10) {
+      return;
+    }
+
+    ctx.beginPath();
+    if (kind === 'inflection') {
+      ctx.rect(x - 3.2, y - 3.2, 6.4, 6.4);
+    } else if (kind === 'max') {
+      ctx.moveTo(x, y - 5);
+      ctx.lineTo(x + 5, y + 4);
+      ctx.lineTo(x - 5, y + 4);
+      ctx.closePath();
+    } else {
+      ctx.moveTo(x, y + 5);
+      ctx.lineTo(x + 5, y - 4);
+      ctx.lineTo(x - 5, y - 4);
+      ctx.closePath();
+    }
+    ctx.fillStyle = '#080d19';
+    ctx.fill();
+    ctx.strokeStyle = color;
+    ctx.stroke();
   }
 
   private drawGrid(ctx: CanvasRenderingContext2D): void {
@@ -753,7 +1256,7 @@ export class FunctionPlotter {
 
       for (let px = 0; px <= this.width + sampleStep; px += sampleStep) {
         const worldX = center.x + (px - this.width / 2) / pixelsPerUnit;
-        const value = evaluateAt(fn.compiled, worldX);
+        const value = evaluateAt(fn.compiled, worldX, this.parameters());
 
         if (!Number.isFinite(value)) {
           previousY = null;
@@ -801,6 +1304,7 @@ export class FunctionPlotter {
     const pixelsPerUnit = this.pixelsPerUnit();
     const center = this.center();
     const worldX = center.x + (hover.x - this.width / 2) / pixelsPerUnit;
+    const parameters = this.parameters();
 
     ctx.save();
     ctx.strokeStyle = 'rgba(226, 232, 240, 0.28)';
@@ -818,7 +1322,7 @@ export class FunctionPlotter {
         continue;
       }
 
-      const value = evaluateAt(fn.compiled, worldX);
+      const value = evaluateAt(fn.compiled, worldX, parameters);
       if (!Number.isFinite(value)) {
         continue;
       }

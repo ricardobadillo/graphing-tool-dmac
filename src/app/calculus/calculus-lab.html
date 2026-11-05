@@ -1,0 +1,72 @@
+<div class="relative min-h-[calc(100dvh-3.5rem)] overflow-hidden bg-[#070b16] text-slate-100">
+  <div class="pointer-events-none absolute inset-0 overflow-hidden">
+    <div
+      class="absolute -top-48 left-1/3 h-[520px] w-[820px] -translate-x-1/2 rounded-full bg-emerald-500/10 blur-[130px]"
+    ></div>
+    <div
+      class="absolute -bottom-40 right-0 h-[420px] w-[520px] rounded-full bg-sky-500/10 blur-[130px]"
+    ></div>
+  </div>
+
+  <div class="relative z-10 mx-auto flex w-full max-w-7xl flex-col gap-5 px-4 py-6 sm:px-6 lg:py-8">
+    <header>
+      <div
+        class="mb-3 inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.2em] text-emerald-300/90"
+      >
+        <span
+          class="h-1.5 w-1.5 rounded-full bg-emerald-400 shadow-[0_0_10px_2px_rgba(52,211,153,0.8)]"
+        ></span>
+        Cálculo
+      </div>
+
+      <h1 class="text-3xl font-semibold tracking-tight text-white sm:text-4xl">
+        Laboratorio de cálculo
+      </h1>
+      <p class="mt-2 max-w-3xl text-sm leading-relaxed text-slate-400">
+        Límites con L’Hôpital, optimización 1D, integración y aplicaciones, ecuaciones diferenciales
+        y derivadas parciales. Cada pestaña incluye el cálculo numérico, la interpretación y una
+        visualización interactiva.
+      </p>
+    </header>
+
+    <nav
+      class="flex flex-wrap gap-1 rounded-2xl border border-white/10 bg-white/[0.03] p-1.5"
+      aria-label="Herramientas de cálculo"
+    >
+      @for (item of tabs; track item.key) {
+        <button
+          type="button"
+          class="lab-tab text-left"
+          [attr.data-active]="tab() === item.key"
+          (click)="setTab(item.key)"
+        >
+          <span class="block">{{ item.label }}</span>
+          <span class="block text-[9px] font-normal opacity-70">{{ item.hint }}</span>
+        </button>
+      }
+    </nav>
+
+    <div class="min-w-0">
+      @switch (tab()) {
+        @case ('lhopital') {
+          <app-lhopital-lab />
+        }
+        @case ('optimization') {
+          <app-optimization-1d-lab />
+        }
+        @case ('integration') {
+          <app-integration-lab />
+        }
+        @case ('applications') {
+          <app-applications-lab />
+        }
+        @case ('odes') {
+          <app-ode-lab />
+        }
+        @case ('partials') {
+          <app-partials-lab />
+        }
+      }
+    </div>
+  </div>
+</div>

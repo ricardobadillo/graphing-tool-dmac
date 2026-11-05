@@ -1,0 +1,167 @@
+<section class="grid gap-4 lg:grid-cols-[minmax(300px,380px)_minmax(0,1fr)]">
+  <aside class="flex flex-col gap-4">
+    <div class="rounded-2xl border border-white/10 bg-white/[0.03] p-4 shadow-2xl shadow-black/20">
+      <h2 class="text-sm font-semibold text-white">Función y punto</h2>
+
+      <label class="mt-3 block">
+        <span class="lab-field-label">f(x, y)</span>
+        <input
+          class="lab-input"
+          type="text"
+          [value]="expression()"
+          (input)="onExpressionInput($event)"
+          aria-label="Función de dos variables"
+        />
+      </label>
+
+      <div class="mt-3 grid grid-cols-3 gap-2">
+        <label class="block">
+          <span class="lab-field-label">x₀</span>
+          <input
+            class="lab-input"
+            type="text"
+            [value]="xInput()"
+            (input)="onXInput($event)"
+            aria-label="Coordenada x del punto"
+          />
+        </label>
+        <label class="block">
+          <span class="lab-field-label">y₀</span>
+          <input
+            class="lab-input"
+            type="text"
+            [value]="yInput()"
+            (input)="onYInput($event)"
+            aria-label="Coordenada y del punto"
+          />
+        </label>
+        <label class="block">
+          <span class="lab-field-label">ángulo °</span>
+          <input
+            class="lab-input"
+            type="text"
+            [value]="angleInput()"
+            (input)="onAngleInput($event)"
+            aria-label="Ángulo de la derivada direccional"
+          />
+        </label>
+      </div>
+
+      <div class="mt-2 flex flex-wrap gap-1.5">
+        @for (preset of presets; track preset.label) {
+          <button type="button" class="lab-chip" (click)="applyPreset(preset)">
+            {{ preset.label }}
+          </button>
+        }
+      </div>
+
+      @if (!valid()) {
+        <p class="mt-3 text-[11px] text-rose-300">Revisa las coordenadas y el ángulo.</p>
+      }
+      @if (analysis().error) {
+        <p class="mt-3 text-[11px] text-rose-300">{{ analysis().error }}</p>
+      }
+
+      <div class="mt-4 border-t border-white/5 pt-3">
+        <p class="lab-field-label">Gradiente</p>
+        <p class="mt-1 text-[11px] leading-relaxed text-slate-400">
+          El gradiente apunta en la dirección de máximo crecimiento. La derivada direccional es su
+          proyección sobre la dirección elegida.
+        </p>
+      </div>
+    </div>
+
+    <div class="rounded-2xl border border-white/10 bg-white/[0.03] p-4 shadow-2xl shadow-black/20">
+      <h2 class="text-sm font-semibold text-white">Resultados</h2>
+
+      <div class="mt-3 grid grid-cols-2 gap-2 text-[11px]">
+        <div class="rounded-lg border border-white/10 bg-white/[0.02] p-2">
+          <p class="text-slate-500">f(x₀, y₀)</p>
+          <p class="mt-1 font-mono text-slate-100">{{ format(plane()?.z ?? null) }}</p>
+        </div>
+        <div class="rounded-lg border border-white/10 bg-white/[0.02] p-2">
+          <p class="text-slate-500">D<sub>u</sub>f</p>
+          <p class="mt-1 font-mono text-pink-200">{{ format(directional()) }}</p>
+        </div>
+        <div class="rounded-lg border border-white/10 bg-white/[0.02] p-2">
+          <p class="text-slate-500">∂f/∂x</p>
+          <p class="mt-1 font-mono text-sky-200">{{ format(analysis().numeric?.fx ?? null) }}</p>
+        </div>
+        <div class="rounded-lg border border-white/10 bg-white/[0.02] p-2">
+          <p class="text-slate-500">∂f/∂y</p>
+          <p class="mt-1 font-mono text-violet-200">{{ format(analysis().numeric?.fy ?? null) }}</p>
+        </div>
+      </div>
+
+      <div class="mt-3 space-y-1.5 border-t border-white/5 pt-3 text-[11px]">
+        <p class="flex justify-between gap-2">
+          <span class="text-slate-500">∇f</span>
+          <span class="font-mono text-amber-200">
+            ({{ format(analysis().gradient?.x ?? null) }},
+            {{ format(analysis().gradient?.y ?? null) }})
+          </span>
+        </p>
+        <p class="flex justify-between gap-2">
+          <span class="text-slate-500">f<sub>xx</sub></span>
+          <span class="font-mono text-slate-300">{{
+            format(analysis().numeric?.fxx ?? null)
+          }}</span>
+        </p>
+        <p class="flex justify-between gap-2">
+          <span class="text-slate-500">f<sub>yy</sub></span>
+          <span class="font-mono text-slate-300">{{
+            format(analysis().numeric?.fyy ?? null)
+          }}</span>
+        </p>
+        <p class="flex justify-between gap-2">
+          <span class="text-slate-500">f<sub>xy</sub></span>
+          <span class="font-mono text-slate-300">{{
+            format(analysis().numeric?.fxy ?? null)
+          }}</span>
+        </p>
+      </div>
+
+      <div class="mt-3 border-t border-white/5 pt-3">
+        <p class="lab-field-label">Derivadas simbólicas</p>
+        <p class="mt-1 break-all font-mono text-[10px] text-sky-200">
+          f<sub>x</sub> = {{ analysis().symbolic.fx ?? '—' }}
+        </p>
+        <p class="mt-1 break-all font-mono text-[10px] text-violet-200">
+          f<sub>y</sub> = {{ analysis().symbolic.fy ?? '—' }}
+        </p>
+      </div>
+    </div>
+  </aside>
+
+  <div class="flex flex-col gap-4">
+    <div
+      class="flex min-h-[420px] flex-col overflow-hidden rounded-2xl border border-white/10 bg-white/[0.03] shadow-2xl shadow-black/25"
+    >
+      <div class="relative flex-1 overflow-hidden">
+        <div class="lab-stage absolute inset-0"></div>
+        <canvas
+          #canvas
+          class="absolute inset-0 h-full w-full"
+          tabindex="0"
+          aria-label="Mapa de calor de la función, gradiente y dirección de la derivada direccional."
+        ></canvas>
+      </div>
+      <div class="border-t border-white/5 px-3 py-2 font-mono text-[10px] text-slate-500">
+        gradiente en amarillo · dirección en rosa · color = valor de f
+      </div>
+    </div>
+
+    @if (plane(); as tangent) {
+      <div
+        class="rounded-2xl border border-white/10 bg-white/[0.03] p-4 shadow-2xl shadow-black/20"
+      >
+        <h2 class="text-sm font-semibold text-white">Plano tangente</h2>
+        <p
+          class="mt-2 break-all rounded-lg bg-white/[0.03] px-2.5 py-2 font-mono text-[11px] text-amber-200"
+        >
+          {{ tangent.equation }}
+        </p>
+      </div>
+    }
+  </div>
+</section>

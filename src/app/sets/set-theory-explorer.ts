@@ -3,7 +3,6 @@ import {
   Component,
   DestroyRef,
   ElementRef,
-  afterNextRender,
   computed,
   effect,
   inject,
@@ -28,6 +27,7 @@ import {
   type SetLaw,
   type SetNode,
 } from './sets';
+import { CanvasSurface } from '../shared/canvas-surface';
 
 type Mode = 'venn' | 'laws';
 type LawSide = 'left' | 'right';
@@ -65,7 +65,7 @@ interface VennLayout {
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class SetTheoryExplorer {
-  private readonly canvasRef = viewChild.required<ElementRef<HTMLCanvasElement>>('canvas');
+  private readonly canvasRef = viewChild<ElementRef<HTMLCanvasElement>>('canvas');
   private readonly expressionInput = viewChild<ElementRef<HTMLInputElement>>('expressionInput');
   private readonly destroyRef = inject(DestroyRef);
 
@@ -226,13 +226,25 @@ export class SetTheoryExplorer {
     return 'violet';
   });
 
-  private ctx: CanvasRenderingContext2D | null = null;
-  private width = 0;
-  private height = 0;
-  private dpr = 1;
-  private resizeObserver: ResizeObserver | null = null;
-  private frame = 0;
-  private fallback = 0;
+  private surface: CanvasSurface | null = null;
+  private surfaceCanvas: HTMLCanvasElement | null = null;
+
+  private canvasElement(): HTMLCanvasElement | null {
+    return this.canvasRef()?.nativeElement ?? null;
+  }
+
+  private get ctx(): CanvasRenderingContext2D | null {
+    return this.surface?.context ?? null;
+  }
+  private get width(): number {
+    return this.surface?.width ?? 0;
+  }
+  private get height(): number {
+    return this.surface?.height ?? 0;
+  }
+  private get dpr(): number {
+    return this.surface?.pixelRatio ?? 1;
+  }
   private layout: VennLayout | null = null;
 
   constructor() {
@@ -246,32 +258,39 @@ export class SetTheoryExplorer {
       this.expression();
       this.lawId();
       this.lawSide();
+      this.canvasRef();
+      this.attachSurface();
       this.size();
       this.scheduleDraw();
     });
 
-    afterNextRender(() => {
-      if (typeof CanvasRenderingContext2D === 'undefined') {
-        return;
-      }
+    this.destroyRef.onDestroy(() => this.surface?.destroy());
+  }
 
-      const canvas = this.canvasRef().nativeElement;
-      const container = canvas.parentElement;
-      this.ctx = canvas.getContext('2d');
+  private attachSurface(): void {
+    if (typeof CanvasRenderingContext2D === 'undefined') {
+      return;
+    }
 
-      if (container && typeof ResizeObserver !== 'undefined') {
-        this.resizeObserver = new ResizeObserver(() => this.resize());
-        this.resizeObserver.observe(container);
-      }
+    const canvas = this.canvasElement();
+    if (!canvas || canvas === this.surfaceCanvas) {
+      return;
+    }
 
-      this.resize();
+    const container = canvas.parentElement;
+    if (!container) {
+      return;
+    }
 
-      this.destroyRef.onDestroy(() => {
-        this.resizeObserver?.disconnect();
-        cancelAnimationFrame(this.frame);
-        cancelAnimationFrame(this.fallback);
-      });
+    this.surface?.destroy();
+    this.surfaceCanvas = canvas;
+    this.surface = new CanvasSurface({
+      canvas,
+      container,
+      draw: () => this.draw(),
+      onResize: (size) => this.size.set(size),
     });
+    this.surface.resize();
   }
 
   // ------------------------------------------------------------------ acciones
@@ -359,49 +378,11 @@ export class SetTheoryExplorer {
   // ------------------------------------------------------------------- canvas
 
   private resize(): void {
-    const canvas = this.canvasRef().nativeElement;
-    const container = canvas.parentElement;
-    if (!container) {
-      return;
-    }
-
-    const rect = container.getBoundingClientRect();
-    const width = Math.max(1, Math.round(rect.width));
-    const height = Math.max(1, Math.round(rect.height));
-    const dpr = Math.min(window.devicePixelRatio || 1, 2.5);
-
-    if (width === this.width && height === this.height && dpr === this.dpr) {
-      return;
-    }
-
-    this.width = width;
-    this.height = height;
-    this.dpr = dpr;
-    canvas.width = Math.round(width * dpr);
-    canvas.height = Math.round(height * dpr);
-    this.size.set({ w: width, h: height });
-    this.scheduleDraw();
+    this.surface?.resize();
   }
 
   private scheduleDraw(): void {
-    if (!this.ctx || this.frame) {
-      return;
-    }
-
-    this.frame = requestAnimationFrame(() => {
-      cancelAnimationFrame(this.frame);
-      clearTimeout(this.fallback);
-      this.frame = 0;
-      this.fallback = 0;
-      this.draw();
-    });
-
-    this.fallback = window.setTimeout(() => {
-      cancelAnimationFrame(this.frame);
-      this.frame = 0;
-      this.fallback = 0;
-      this.draw();
-    }, 90);
+    this.surface?.requestDraw();
   }
 
   private draw(): void {
@@ -661,7 +642,11 @@ export class SetTheoryExplorer {
       return;
     }
 
-    const rect = this.canvasRef().nativeElement.getBoundingClientRect();
+    const canvas = this.canvasElement();
+    if (!canvas) {
+      return;
+    }
+    const rect = canvas.getBoundingClientRect();
     const x = event.clientX - rect.left;
     const y = event.clientY - rect.top;
     const { u } = this.layout;

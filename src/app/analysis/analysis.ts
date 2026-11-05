@@ -1,4 +1,5 @@
 import { compile, derivative } from 'mathjs/number';
+import { compileExpression, evaluateAt, toSymbolicExpression } from '../shared/expression';
 
 export type Wave = 'square' | 'sawtooth' | 'triangle';
 
@@ -34,27 +35,25 @@ export function sampleCurve(
   xMax: number,
   count = 360,
 ): { points: CurvePoint[]; error: string | null } {
-  try {
-    const compiled = compile(expression);
-    const points: CurvePoint[] = [];
-
-    for (let index = 0; index <= count; index += 1) {
-      const x = xMin + ((xMax - xMin) * index) / count;
-      try {
-        const value = compiled.evaluate({ x });
-        points.push({
-          x,
-          y: typeof value === 'number' && Number.isFinite(value) ? value : null,
-        });
-      } catch {
-        points.push({ x, y: null });
-      }
-    }
-
-    return { points, error: null };
-  } catch {
-    return { points: [], error: 'Expresión no válida. Prueba con sin(x), e^x o x^2.' };
+  const result = compileExpression(expression, ['x']);
+  if (result.error || !result.compiled) {
+    return {
+      points: [],
+      error: result.error ?? 'Expresión no válida. Prueba con sin(x), e^x o x^2.',
+    };
   }
+
+  const points: CurvePoint[] = [];
+  for (let index = 0; index <= count; index += 1) {
+    const x = xMin + ((xMax - xMin) * index) / count;
+    const value = evaluateAt(result.compiled, x);
+    points.push({
+      x,
+      y: Number.isFinite(value) ? value : null,
+    });
+  }
+
+  return { points, error: null };
 }
 
 export function taylorSeries(expression: string, center: number, degree: number): TaylorResult {
@@ -65,9 +64,17 @@ export function taylorSeries(expression: string, center: number, degree: number)
     return { coefficients: null, error: 'El grado debe estar entre 0 y 10.' };
   }
 
+  const symbolic = toSymbolicExpression(expression);
+  if (!symbolic) {
+    return {
+      coefficients: null,
+      error: 'No se pudo calcular la serie. Revisa la función o el centro.',
+    };
+  }
+
   try {
     const coefficients: number[] = [];
-    let current = expression;
+    let current = symbolic;
 
     for (let order = 0; order <= degree; order += 1) {
       const compiled = compile(current);

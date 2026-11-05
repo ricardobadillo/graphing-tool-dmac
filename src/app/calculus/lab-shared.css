@@ -1,0 +1,88 @@
+.lab-stage {
+  background:
+    radial-gradient(ellipse at 50% 45%, rgb(56 189 248 / 0.07) 0%, transparent 62%),
+    radial-gradient(ellipse at 86% 88%, rgb(167 139 250 / 0.07) 0%, transparent 55%), #080d19;
+}
+
+.lab-field-label {
+  display: block;
+  margin-bottom: 0.3rem;
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  color: rgb(100 116 139);
+}
+
+.lab-input {
+  width: 100%;
+  padding: 0.45rem 0.6rem;
+  border: 1px solid rgb(255 255 255 / 0.1);
+  border-radius: 0.6rem;
+  background: #080d19;
+  color: rgb(226 232 240);
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 12px;
+  outline: none;
+  transition:
+    border-color 150ms ease,
+    box-shadow 150ms ease;
+}
+
+.lab-input:focus {
+  border-color: rgb(56 189 248 / 0.6);
+  box-shadow: 0 0 0 3px rgb(56 189 248 / 0.14);
+}
+
+.lab-chip {
+  padding: 0.28rem 0.5rem;
+  border: 1px solid rgb(255 255 255 / 0.1);
+  border-radius: 999px;
+  background: rgb(255 255 255 / 0.03);
+  color: rgb(148 163 184);
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 10px;
+  transition:
+    border-color 150ms ease,
+    background-color 150ms ease,
+    color 150ms ease;
+}
+
+.lab-chip:hover {
+  border-color: rgb(56 189 248 / 0.4);
+  background: rgb(56 189 248 / 0.08);
+  color: rgb(186 230 253);
+}
+
+.lab-chip:focus-visible {
+  outline: 2px solid rgb(56 189 248 / 0.7);
+  outline-offset: 2px;
+}
+
+.lab-tab {
+  padding: 0.4rem 0.7rem;
+  border: 1px solid transparent;
+  border-radius: 0.5rem;
+  color: rgb(148 163 184);
+  font-size: 11px;
+  font-weight: 500;
+  transition:
+    color 150ms ease,
+    background-color 150ms ease,
+    border-color 150ms ease;
+}
+
+.lab-tab:hover {
+  color: rgb(226 232 240);
+  background: rgb(255 255 255 / 0.04);
+}
+
+.lab-tab[data-active='true'] {
+  color: rgb(186 230 253);
+  background: rgb(56 189 248 / 0.12);
+  border-color: rgb(56 189 248 / 0.25);
+}
+
+.lab-tab:focus-visible {
+  outline: 2px solid rgb(56 189 248 / 0.7);
+  outline-offset: 2px;
+}

@@ -1,6 +1,6 @@
 import { BIG_O_TABLE, estimateGrowth, formatOperations, runLab } from './complexity';
 import { buildComplexityChart } from './complexity-chart';
-import { SORT_META, generateArray, mulberry32, runSort, type SortAlgorithm } from './sorting';
+import { SORT_META, generateArray, mulberry32, runSort } from './sorting';
 
 const INPUT = [5, 2, 9, 1, 7, 3, 8, 4, 6];
 const EXPECTED = [...INPUT].sort((a, b) => a - b);

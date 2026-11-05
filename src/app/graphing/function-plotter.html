@@ -26,8 +26,8 @@
           Explora funciones en tiempo real
         </h1>
         <p class="mt-2 max-w-xl text-sm leading-relaxed text-slate-400">
-          Escribe una expresión matemática, desplázate por el plano y ajusta el zoom. Todo se
-          calcula y dibuja en el navegador.
+          Escribe una expresión matemática, ajusta parámetros, sombrea regiones, analiza raíces y
+          extremos, y desplázate por el plano. Todo se calcula y dibuja en el navegador.
         </p>
       </div>
 
@@ -217,6 +217,171 @@
           Añadir función
         </button>
 
+        <div class="rounded-xl border border-white/10 bg-white/[0.02] p-3">
+          <div class="flex items-center justify-between gap-2">
+            <div>
+              <p class="text-[10px] font-semibold uppercase tracking-[0.15em] text-slate-500">
+                Parámetros
+              </p>
+              <p class="mt-0.5 font-mono text-[10px] text-slate-600">a·sin(bx+c)+d</p>
+            </div>
+            <button
+              type="button"
+              class="rounded-lg border border-fuchsia-400/30 bg-fuchsia-400/10 px-2 py-1 text-[10px] font-medium text-fuchsia-200 transition hover:bg-fuchsia-400/15"
+              (click)="toggleAnimation()"
+            >
+              {{ animating() ? 'Pausar' : 'Animar' }}
+            </button>
+          </div>
+
+          <div class="mt-2 flex items-center gap-2">
+            <label class="flex items-center gap-1.5 text-[10px] text-slate-500">
+              Animar
+              <select
+                class="rounded-md border border-white/10 bg-[#080d19] px-1.5 py-1 font-mono text-[10px] text-slate-200 outline-none focus:border-fuchsia-400/60"
+                [value]="animationParameter()"
+                (change)="setAnimationParameter($event)"
+                aria-label="Parámetro a animar"
+              >
+                @for (key of parameterKeys; track key) {
+                  <option [value]="key">{{ key }}</option>
+                }
+              </select>
+            </label>
+          </div>
+
+          <p class="mt-1.5 text-[10px] leading-relaxed text-slate-500">
+            @if (parameterUsers().length > 0) {
+              Usada por:
+              <span class="font-mono text-slate-300">{{ parameterUsers().join(', ') }}</span>
+            } @else {
+              Ninguna función visible usa
+              <span class="font-mono text-amber-300">{{ animationParameter() }}</span
+              >.
+            }
+          </p>
+
+          @if (animationWarning(); as warning) {
+            <p
+              class="mt-1.5 rounded-lg border border-amber-400/20 bg-amber-400/10 px-2 py-1.5 text-[10px] leading-relaxed text-amber-200"
+            >
+              {{ warning }}
+            </p>
+          }
+
+          <div class="mt-2 space-y-1.5">
+            @for (key of parameterKeys; track key) {
+              <label class="flex items-center gap-2">
+                <span class="w-3 font-mono text-[11px] text-slate-400">{{ key }}</span>
+                <input
+                  class="range-input min-w-0 flex-1"
+                  type="range"
+                  min="-5"
+                  max="5"
+                  step="0.1"
+                  [value]="parameters()[key]"
+                  (input)="setParameter(key, $event)"
+                  [attr.aria-label]="'Parámetro ' + key"
+                />
+                <span class="w-10 text-right font-mono text-[10px] text-slate-300">
+                  {{ parameters()[key].toFixed(1) }}
+                </span>
+              </label>
+            }
+          </div>
+
+          <div class="mt-2 flex gap-1.5">
+            <button
+              type="button"
+              class="mini-btn flex-1 justify-center"
+              (click)="useParameterTemplate()"
+            >
+              Usar plantilla
+            </button>
+            <button
+              type="button"
+              class="mini-btn flex-1 justify-center"
+              (click)="resetParameters()"
+            >
+              Restablecer
+            </button>
+          </div>
+        </div>
+
+        <div class="rounded-xl border border-white/10 bg-white/[0.02] p-3">
+          <div class="flex items-center justify-between gap-2">
+            <div>
+              <p class="text-[10px] font-semibold uppercase tracking-[0.15em] text-slate-500">
+                Regiones
+              </p>
+              <p class="mt-0.5 text-[10px] text-slate-600">Sombrea y &gt; f(x) o y &lt; f(x)</p>
+            </div>
+            <button
+              type="button"
+              class="rounded-lg border border-emerald-400/30 bg-emerald-400/10 px-2 py-1 text-[10px] font-medium text-emerald-200 transition hover:bg-emerald-400/15"
+              (click)="addInequality()"
+            >
+              Añadir
+            </button>
+          </div>
+
+          @if (inequalities().length === 0) {
+            <p
+              class="mt-2 rounded-lg border border-dashed border-white/10 px-2 py-2 text-[10px] leading-relaxed text-slate-500"
+            >
+              Añade una inecuación para sombrear la región que cumple la desigualdad.
+            </p>
+          }
+
+          <div class="mt-2 space-y-2">
+            @for (inequality of inequalities(); track inequality.id) {
+              <div class="rounded-lg border border-white/10 bg-[#080d19]/70 p-2">
+                <div class="flex items-center gap-1">
+                  <select
+                    class="rounded-md border border-white/10 bg-[#080d19] px-1 py-1 font-mono text-[10px] text-slate-300 outline-none"
+                    [value]="inequality.operator"
+                    (change)="updateInequalityOperator(inequality.id, $event)"
+                    [attr.aria-label]="'Operador de la inecuación ' + inequality.id"
+                  >
+                    <option value=">">y &gt;</option>
+                    <option value=">=">y ≥</option>
+                    <option value="<">y &lt;</option>
+                    <option value="<=">y ≤</option>
+                  </select>
+                  <input
+                    class="min-w-0 flex-1 rounded-md border border-white/10 bg-[#080d19] px-1.5 py-1 font-mono text-[10px] text-slate-100 outline-none focus:border-emerald-400/60"
+                    type="text"
+                    [value]="inequality.expression"
+                    (input)="updateInequalityExpression(inequality.id, $event)"
+                    spellcheck="false"
+                    autocomplete="off"
+                    [attr.aria-label]="'Función de la inecuación ' + inequality.id"
+                  />
+                  <input
+                    type="color"
+                    class="h-6 w-6 cursor-pointer rounded border border-white/10 bg-transparent p-0"
+                    [value]="inequality.color"
+                    (input)="updateInequalityColor(inequality.id, $event)"
+                    [attr.aria-label]="'Color de la inecuación ' + inequality.id"
+                  />
+                  <button
+                    type="button"
+                    class="icon-btn shrink-0"
+                    (click)="removeInequality(inequality.id)"
+                    [attr.aria-label]="'Eliminar inecuación ' + inequality.id"
+                    title="Eliminar"
+                  >
+                    ×
+                  </button>
+                </div>
+                @if (inequality.error) {
+                  <p class="mt-1 text-[10px] text-rose-300">{{ inequality.error }}</p>
+                }
+              </div>
+            }
+          </div>
+        </div>
+
         <div class="mt-auto space-y-2 border-t border-white/5 pt-3">
           <p class="text-[10px] font-semibold uppercase tracking-[0.15em] text-slate-500">
             Ejemplos rápidos
@@ -248,7 +413,11 @@
             (pointerup)="onPointerUp($event)"
             (pointercancel)="onPointerUp($event)"
             (pointerleave)="onPointerLeave()"
-            aria-label="Área del gráfico. Arrastra para desplazar el plano y usa la rueda o la pinza para hacer zoom."
+            appCanvasKeyboard
+            (pan)="panBy($event.x, $event.y)"
+            (zoom)="zoomBy($event)"
+            (resetView)="resetView()"
+            aria-label="Área del gráfico. Arrastra para desplazar el plano, usa la rueda o la pinza para hacer zoom y las flechas, más, menos y cero con el teclado."
           ></canvas>
 
           <canvas
@@ -370,10 +539,92 @@
         >
           <span>Arrastra para mover · Rueda o pinza para zoom</span>
           <span class="hidden font-mono sm:inline"
-            >ln(x) natural · log(x) base 10 · ^ potencia · pi, e</span
+            >ln(x) natural · log(x) base 10 · ^ potencia · pi, e · piecewise(cond, expr, …) ·
+            a,b,c,d</span
           >
         </div>
       </div>
+    </section>
+
+    <section class="rounded-2xl border border-white/10 bg-white/[0.03] shadow-2xl shadow-black/20">
+      <div class="flex flex-wrap items-center justify-between gap-2 px-4 py-3">
+        <div>
+          <h2 class="text-sm font-semibold text-white">Análisis de curvas</h2>
+          <p class="mt-0.5 text-[10px] text-slate-500">
+            Raíces, extremos, inflexiones y asíntotas calculados numéricamente en la vista actual.
+          </p>
+        </div>
+        <span class="rounded-md bg-white/5 px-2 py-0.5 font-mono text-[10px] text-slate-400">
+          {{ analyses().length }} curvas
+        </span>
+      </div>
+
+      @if (analyses().length === 0) {
+        <p class="border-t border-white/5 px-4 py-6 text-center text-xs text-slate-500">
+          Añade una función visible para ver su análisis.
+        </p>
+      } @else {
+        <div class="grid gap-3 border-t border-white/5 p-4 md:grid-cols-2 xl:grid-cols-3">
+          @for (item of analyses(); track item.fn.id) {
+            <article class="rounded-xl border border-white/10 bg-[#080d19]/60 p-3">
+              <div class="flex items-center gap-2">
+                <span
+                  class="h-2 w-2 shrink-0 rounded-full"
+                  [style.background]="item.fn.color"
+                ></span>
+                <p class="min-w-0 truncate font-mono text-[11px] text-slate-200">
+                  {{ item.fn.expression }}
+                </p>
+              </div>
+
+              <dl class="mt-3 space-y-2 text-[11px]">
+                <div class="flex gap-2">
+                  <dt class="w-20 shrink-0 text-slate-500">Raíces</dt>
+                  <dd class="min-w-0 break-words font-mono text-slate-300">
+                    {{ formatRoots(item.analysis.roots) }}
+                  </dd>
+                </div>
+                <div class="flex gap-2">
+                  <dt class="w-20 shrink-0 text-slate-500">Máximos</dt>
+                  <dd class="min-w-0 break-words font-mono text-emerald-200">
+                    {{ formatExtremaPoints(item.analysis.maxima) }}
+                  </dd>
+                </div>
+                <div class="flex gap-2">
+                  <dt class="w-20 shrink-0 text-slate-500">Mínimos</dt>
+                  <dd class="min-w-0 break-words font-mono text-sky-200">
+                    {{ formatExtremaPoints(item.analysis.minima) }}
+                  </dd>
+                </div>
+                <div class="flex gap-2">
+                  <dt class="w-20 shrink-0 text-slate-500">Inflexión</dt>
+                  <dd class="min-w-0 break-words font-mono text-amber-200">
+                    {{ formatRoots(item.analysis.inflections) }}
+                  </dd>
+                </div>
+                <div class="flex gap-2">
+                  <dt class="w-20 shrink-0 text-slate-500">Monotonía</dt>
+                  <dd class="min-w-0 break-words font-mono text-slate-300">
+                    {{ formatMonotonicIntervals(item.analysis.monotonic) }}
+                  </dd>
+                </div>
+                <div class="flex gap-2">
+                  <dt class="w-20 shrink-0 text-slate-500">Asíntotas</dt>
+                  <dd class="min-w-0 break-words font-mono text-rose-200">
+                    {{ formatAsymptotes(item.analysis.verticalAsymptotes) }}
+                  </dd>
+                </div>
+                <div class="flex gap-2">
+                  <dt class="w-20 shrink-0 text-slate-500">Horizontales</dt>
+                  <dd class="min-w-0 break-words font-mono text-slate-300">
+                    {{ formatHorizontalAsymptotes(item.analysis.horizontalAsymptotes) }}
+                  </dd>
+                </div>
+              </dl>
+            </article>
+          }
+        </div>
+      }
     </section>
   </div>
 

@@ -1,0 +1,357 @@
+<section class="flex flex-col gap-4">
+  <div class="inline-flex flex-wrap rounded-xl border border-white/10 bg-white/[0.03] p-1">
+    @for (item of modes; track item.key) {
+      <button
+        type="button"
+        class="lab-tab"
+        [attr.data-active]="mode() === item.key"
+        (click)="setMode(item.key)"
+      >
+        {{ item.label }}
+      </button>
+    }
+  </div>
+
+  <div class="grid gap-4 lg:grid-cols-[minmax(300px,380px)_minmax(0,1fr)]">
+    <aside class="flex flex-col gap-4">
+      <div
+        class="rounded-2xl border border-white/10 bg-white/[0.03] p-4 shadow-2xl shadow-black/20"
+      >
+        @if (mode() === 'definite' || mode() === 'improper') {
+          <h2 class="text-sm font-semibold text-white">Integral</h2>
+          <label class="mt-3 block">
+            <span class="lab-field-label">f(x)</span>
+            <input
+              class="lab-input"
+              type="text"
+              [value]="expression()"
+              (input)="onExpressionInput($event)"
+              aria-label="Integrando"
+            />
+          </label>
+          <div class="mt-3 grid grid-cols-2 gap-2">
+            <label class="block">
+              <span class="lab-field-label">a</span>
+              <input
+                class="lab-input"
+                type="text"
+                [value]="aInput()"
+                (input)="onAInput($event)"
+                aria-label="Límite inferior"
+              />
+            </label>
+            <label class="block">
+              <span class="lab-field-label">b</span>
+              <input
+                class="lab-input"
+                type="text"
+                [value]="bInput()"
+                (input)="onBInput($event)"
+                aria-label="Límite superior"
+              />
+            </label>
+          </div>
+          <div class="mt-2 flex flex-wrap gap-1.5">
+            <button
+              type="button"
+              class="lab-chip"
+              (click)="applyDefinitePreset('sin(x)', '0', '3.141592653589793')"
+            >
+              sin(x)
+            </button>
+            <button type="button" class="lab-chip" (click)="applyDefinitePreset('x^2', '0', '1')">
+              x²
+            </button>
+            <button
+              type="button"
+              class="lab-chip"
+              (click)="applyDefinitePreset('1/sqrt(x)', '0', '1')"
+            >
+              1/√x
+            </button>
+            <button type="button" class="lab-chip" (click)="applyDefinitePreset('1/x', '-1', '1')">
+              1/x
+            </button>
+          </div>
+        } @else if (mode() === 'substitution') {
+          <h2 class="text-sm font-semibold text-white">Sustitución</h2>
+          <label class="mt-3 block">
+            <span class="lab-field-label">f(x)</span>
+            <input
+              class="lab-input"
+              type="text"
+              [value]="substitutionF()"
+              (input)="onSignalInput('substitutionF', $event)"
+              aria-label="Integrando original"
+            />
+          </label>
+          <label class="mt-3 block">
+            <span class="lab-field-label">u = g(x)</span>
+            <input
+              class="lab-input"
+              type="text"
+              [value]="substitutionG()"
+              (input)="onSignalInput('substitutionG', $event)"
+              aria-label="Cambio de variable"
+            />
+          </label>
+          <label class="mt-3 block">
+            <span class="lab-field-label">integrando transformado h(u)</span>
+            <input
+              class="lab-input"
+              type="text"
+              [value]="substitutionH()"
+              (input)="onSignalInput('substitutionH', $event)"
+              aria-label="Integrando transformado"
+            />
+          </label>
+          <div class="mt-3 grid grid-cols-2 gap-2">
+            <label class="block">
+              <span class="lab-field-label">a</span>
+              <input
+                class="lab-input"
+                type="text"
+                [value]="aInput()"
+                (input)="onAInput($event)"
+                aria-label="Límite inferior"
+              />
+            </label>
+            <label class="block">
+              <span class="lab-field-label">b</span>
+              <input
+                class="lab-input"
+                type="text"
+                [value]="bInput()"
+                (input)="onBInput($event)"
+                aria-label="Límite superior"
+              />
+            </label>
+          </div>
+        } @else if (mode() === 'parts') {
+          <h2 class="text-sm font-semibold text-white">Integración por partes</h2>
+          <label class="mt-3 block">
+            <span class="lab-field-label">u(x)</span>
+            <input
+              class="lab-input"
+              type="text"
+              [value]="partsU()"
+              (input)="onSignalInput('partsU', $event)"
+              aria-label="Factor u"
+            />
+          </label>
+          <label class="mt-3 block">
+            <span class="lab-field-label">dv/dx</span>
+            <input
+              class="lab-input"
+              type="text"
+              [value]="partsDv()"
+              (input)="onSignalInput('partsDv', $event)"
+              aria-label="Derivada del factor v"
+            />
+          </label>
+          <div class="mt-3 grid grid-cols-2 gap-2">
+            <label class="block">
+              <span class="lab-field-label">a</span>
+              <input
+                class="lab-input"
+                type="text"
+                [value]="aInput()"
+                (input)="onAInput($event)"
+                aria-label="Límite inferior"
+              />
+            </label>
+            <label class="block">
+              <span class="lab-field-label">b</span>
+              <input
+                class="lab-input"
+                type="text"
+                [value]="bInput()"
+                (input)="onBInput($event)"
+                aria-label="Límite superior"
+              />
+            </label>
+          </div>
+        } @else {
+          <h2 class="text-sm font-semibold text-white">Fracciones parciales</h2>
+          <label class="mt-3 block">
+            <span class="lab-field-label">numerador P(x)</span>
+            <input
+              class="lab-input"
+              type="text"
+              [value]="fractionsNumerator()"
+              (input)="onSignalInput('fractionsNumerator', $event)"
+              aria-label="Numerador"
+            />
+          </label>
+          <label class="mt-3 block">
+            <span class="lab-field-label">raíces del denominador</span>
+            <input
+              class="lab-input"
+              type="text"
+              [value]="fractionsRoots()"
+              (input)="onSignalInput('fractionsRoots', $event)"
+              aria-label="Raíces del denominador"
+            />
+          </label>
+          <div class="mt-3 grid grid-cols-2 gap-2">
+            <label class="block">
+              <span class="lab-field-label">a</span>
+              <input
+                class="lab-input"
+                type="text"
+                [value]="aInput()"
+                (input)="onAInput($event)"
+                aria-label="Límite inferior"
+              />
+            </label>
+            <label class="block">
+              <span class="lab-field-label">b</span>
+              <input
+                class="lab-input"
+                type="text"
+                [value]="bInput()"
+                (input)="onBInput($event)"
+                aria-label="Límite superior"
+              />
+            </label>
+          </div>
+        }
+
+        @if (!intervalValid()) {
+          <p class="mt-3 text-[11px] text-rose-300">El intervalo debe cumplir a &lt; b.</p>
+        }
+      </div>
+
+      <div
+        class="rounded-2xl border border-white/10 bg-white/[0.03] p-4 shadow-2xl shadow-black/20"
+      >
+        <h2 class="text-sm font-semibold text-white">Lectura</h2>
+        @if (mode() === 'definite') {
+          <p class="mt-2 text-[11px] leading-relaxed text-slate-400">
+            Aproximación por Simpson compuesto. El área sombreada representa la integral definida.
+          </p>
+          <p class="mt-3 font-mono text-lg text-sky-200">{{ format(definiteValue()) }}</p>
+        } @else if (mode() === 'improper') {
+          <p class="mt-2 text-[11px] leading-relaxed text-slate-400">
+            Se detectan singularidades y se compara la integral truncada con dos tolerancias para
+            estimar convergencia.
+          </p>
+          @if (improperResult(); as result) {
+            <p
+              class="mt-3 font-mono text-lg"
+              [class.text-emerald-200]="result.convergent"
+              [class.text-rose-200]="!result.convergent"
+            >
+              {{ format(result.value) }}
+            </p>
+            <p
+              class="mt-1 text-[11px]"
+              [class.text-emerald-200]="result.convergent"
+              [class.text-rose-200]="!result.convergent"
+            >
+              {{ result.message }}
+            </p>
+            @if (result.singularities.length > 0) {
+              <p class="mt-2 font-mono text-[10px] text-amber-200">
+                singularidades: {{ formatList(result.singularities) }}
+              </p>
+            }
+          }
+        } @else if (mode() === 'substitution') {
+          @if (substitutionResult(); as result) {
+            <p class="mt-2 text-[11px] leading-relaxed text-slate-400">
+              Se comparan numéricamente la integral original y la transformada. Si coinciden, la
+              sustitución es consistente.
+            </p>
+            <div class="mt-3 space-y-1.5 text-[11px]">
+              <p class="flex justify-between">
+                <span class="text-slate-500">original</span
+                ><span class="font-mono text-sky-200">{{ format(result.original) }}</span>
+              </p>
+              <p class="flex justify-between">
+                <span class="text-slate-500">transformada</span
+                ><span class="font-mono text-violet-200">{{ format(result.transformed) }}</span>
+              </p>
+              <p class="flex justify-between">
+                <span class="text-slate-500">diferencia</span
+                ><span class="font-mono text-emerald-200">{{ format(result.difference) }}</span>
+              </p>
+              <p class="flex justify-between">
+                <span class="text-slate-500">u(a) · u(b)</span
+                ><span class="font-mono text-slate-300"
+                  >{{ format(result.ua) }} · {{ format(result.ub) }}</span
+                >
+              </p>
+            </div>
+          }
+        } @else if (mode() === 'parts') {
+          @if (partsResult(); as result) {
+            <p class="mt-2 text-[11px] leading-relaxed text-slate-400">
+              Identidad: ∫u dv = uv − ∫v du. Se comprueban ambos lados numéricamente.
+            </p>
+            <div class="mt-3 space-y-1.5 text-[11px]">
+              <p class="flex justify-between">
+                <span class="text-slate-500">∫u dv</span
+                ><span class="font-mono text-sky-200">{{ format(result.left) }}</span>
+              </p>
+              <p class="flex justify-between">
+                <span class="text-slate-500">uv − ∫v du</span
+                ><span class="font-mono text-violet-200">{{ format(result.right) }}</span>
+              </p>
+              <p class="flex justify-between">
+                <span class="text-slate-500">diferencia</span
+                ><span class="font-mono text-emerald-200">{{ format(result.difference) }}</span>
+              </p>
+            </div>
+          }
+        } @else {
+          @if (fractionsResult(); as result) {
+            <p
+              class="mt-2 break-all rounded-lg bg-white/[0.03] px-2 py-2 font-mono text-[11px] text-violet-200"
+            >
+              {{ result.decomposition }}
+            </p>
+            @if (result.error) {
+              <p class="mt-2 text-[11px] text-amber-200">{{ result.error }}</p>
+            } @else {
+              <p class="mt-3 flex justify-between text-[11px]">
+                <span class="text-slate-500">integral en [a,b]</span>
+                <span class="font-mono text-emerald-200">{{ format(result.integral) }}</span>
+              </p>
+            }
+            <p class="mt-2 font-mono text-[10px] text-slate-500">
+              coeficientes: {{ formatList(result.coefficients) }}
+            </p>
+          }
+        }
+      </div>
+    </aside>
+
+    <div
+      class="flex min-h-[380px] flex-col overflow-hidden rounded-2xl border border-white/10 bg-white/[0.03] shadow-2xl shadow-black/25"
+    >
+      <div class="relative flex-1 overflow-hidden">
+        <div class="lab-stage absolute inset-0"></div>
+        <canvas
+          #canvas
+          class="absolute inset-0 h-full w-full"
+          tabindex="0"
+          aria-label="Gráfica de la función integrada."
+        ></canvas>
+      </div>
+      <div class="border-t border-white/5 px-3 py-2 font-mono text-[10px] text-slate-500">
+        @if (mode() === 'definite') {
+          ∫<sub>a</sub><sup>b</sup> f(x) dx ≈ {{ format(definiteValue()) }}
+        } @else if (mode() === 'improper') {
+          integral impropia en [a, b]
+        } @else if (mode() === 'substitution') {
+          ∫ f(x) dx = ∫ h(u) du
+        } @else if (mode() === 'parts') {
+          ∫ u dv = uv − ∫ v du
+        } @else {
+          P(x) / ∏(x − rᵢ)
+        }
+      </div>
+    </div>
+  </div>
+</section>

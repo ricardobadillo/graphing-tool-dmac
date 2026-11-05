@@ -1,11 +1,14 @@
 import { ApplicationConfig, provideBrowserGlobalErrorListeners } from '@angular/core';
-import { provideRouter } from '@angular/router';
-import { routes } from './app.routes';
+import { TitleStrategy, provideRouter } from '@angular/router';
 import { provideClientHydration } from '@angular/platform-browser';
+import { routes } from './app.routes';
+import { SeoTitleStrategy } from './seo';
 
 export const appConfig: ApplicationConfig = {
   providers: [
     provideBrowserGlobalErrorListeners(),
-    provideRouter(routes), provideClientHydration()
-  ]
+    provideRouter(routes),
+    provideClientHydration(),
+    { provide: TitleStrategy, useClass: SeoTitleStrategy },
+  ],
 };

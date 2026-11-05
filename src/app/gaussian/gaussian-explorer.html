@@ -78,7 +78,11 @@
             (pointerup)="onPointerUp($event)"
             (pointercancel)="onPointerUp($event)"
             (pointerleave)="onPointerLeave()"
-            aria-label="Plano de Gauss interactivo. Arrastra z o w sobre la retícula de enteros gaussianos."
+            appCanvasKeyboard
+            (pan)="panBy($event.x, $event.y)"
+            (zoom)="zoomBy($event)"
+            (resetView)="fitView()"
+            aria-label="Plano de Gauss interactivo. Arrastra z o w sobre la retícula de enteros gaussianos, o usa las flechas, más, menos y cero con el teclado."
           ></canvas>
 
           <div class="absolute bottom-3 right-3 z-10 flex flex-col gap-1.5">

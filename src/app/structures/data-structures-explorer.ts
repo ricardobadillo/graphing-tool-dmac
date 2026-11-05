@@ -178,7 +178,9 @@ export class DataStructuresExplorer {
   private timer: number | null = null;
   private toastTimer: number | null = null;
 
-  readonly currentFrame = computed(() => this.frames()[this.stepIndex()] ?? null);
+  readonly currentFrame = computed<Frame<unknown> | null>(
+    () => this.frames()[this.stepIndex()] ?? null,
+  );
 
   readonly highlights = computed(() => {
     const map = new Map<string, HighlightTone>();

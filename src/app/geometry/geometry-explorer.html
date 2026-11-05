@@ -102,7 +102,11 @@
             (pointerup)="onPointerUp($event)"
             (pointercancel)="onPointerUp($event)"
             (wheel)="onWheel($event)"
-            aria-label="Visualización interactiva de fractales, el círculo trigonométrico o la banda de Möbius."
+            appCanvasKeyboard
+            (pan)="panBy($event.x, $event.y)"
+            (zoom)="zoomBy($event)"
+            (resetView)="resetView()"
+            aria-label="Visualización interactiva de fractales, el círculo trigonométrico o la banda de Möbius. Usa el puntero o las flechas, más, menos y cero con el teclado."
           ></canvas>
 
           <div

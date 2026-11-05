@@ -60,7 +60,7 @@ describe('motor de cálculo', () => {
     expect(formatCalc(1 / 3)).toBe('1/3');
     expect(formatCalc(0.25)).toBe('1/4');
     expect(formatCalc(2)).toBe('2');
-    expect(formatCalc(Math.PI)).toBe('3.1416');
+    expect(formatCalc(Math.PI)).toBe('π');
     expect(formatCalc(Number.NaN)).toBe('—');
   });
 });

@@ -78,7 +78,11 @@
             (pointerup)="onPointerUp($event)"
             (pointercancel)="onPointerUp($event)"
             (pointerleave)="onPointerLeave()"
-            aria-label="Plano complejo interactivo. Arrastra los puntos z uno y z dos para cambiar su valor."
+            appCanvasKeyboard
+            (pan)="panBy($event.x, $event.y)"
+            (zoom)="zoomBy($event)"
+            (resetView)="fitView()"
+            aria-label="Plano complejo interactivo. Arrastra los puntos z uno y z dos para cambiar su valor, o usa las flechas, más, menos y cero con el teclado."
           ></canvas>
 
           <div class="absolute bottom-3 right-3 z-10 flex flex-col gap-1.5">

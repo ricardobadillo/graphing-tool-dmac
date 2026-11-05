@@ -1,0 +1,32 @@
+:host {
+  display: block;
+}
+
+.lab-tab {
+  padding: 0.45rem 0.7rem;
+  border: 1px solid transparent;
+  border-radius: 0.6rem;
+  color: rgb(148 163 184);
+  font-size: 11px;
+  font-weight: 600;
+  transition:
+    color 150ms ease,
+    background-color 150ms ease,
+    border-color 150ms ease;
+}
+
+.lab-tab:hover {
+  color: rgb(226 232 240);
+  background: rgb(255 255 255 / 0.04);
+}
+
+.lab-tab[data-active='true'] {
+  color: rgb(167 243 208);
+  background: rgb(52 211 153 / 0.12);
+  border-color: rgb(52 211 153 / 0.3);
+}
+
+.lab-tab:focus-visible {
+  outline: 2px solid rgb(52 211 153 / 0.7);
+  outline-offset: 2px;
+}

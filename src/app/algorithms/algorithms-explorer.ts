@@ -74,7 +74,7 @@ export class AlgorithmsExplorer {
 
   private timer: number | null = null;
 
-  readonly currentFrame = computed(() => this.frames()[this.stepIndex()] ?? null);
+  readonly currentFrame = computed<SortFrame | null>(() => this.frames()[this.stepIndex()] ?? null);
   readonly viewArray = computed(() => this.currentFrame()?.array ?? this.baseArray());
   readonly maxValue = computed(() => Math.max(1, ...this.viewArray()));
   readonly highlights = computed(() => {

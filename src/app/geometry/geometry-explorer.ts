@@ -10,7 +10,9 @@ import {
   signal,
   viewChild,
 } from '@angular/core';
-import { formatNumber } from '../complex/complex';
+import { CanvasKeyboard } from '../shared/canvas-keyboard';
+import { CanvasSurface } from '../shared/canvas-surface';
+import { clamp, formatNumber } from '../shared/math-utils';
 import { julia, mandelbrot } from './geometry';
 
 type Mode = 'fractal' | 'circle' | 'mobius';
@@ -28,10 +30,6 @@ interface MobiusQuad {
 }
 
 const PALETTE = buildPalette();
-
-function clamp(value: number, min: number, max: number): number {
-  return Math.min(Math.max(value, min), max);
-}
 
 function buildPalette(): Uint8ClampedArray {
   const stops = [
@@ -66,6 +64,7 @@ function buildPalette(): Uint8ClampedArray {
 
 @Component({
   selector: 'app-geometry-explorer',
+  imports: [CanvasKeyboard],
   templateUrl: './geometry-explorer.html',
   styleUrl: './geometry-explorer.css',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -133,14 +132,21 @@ export class GeometryExplorer {
 
   readonly canvasSize = signal({ w: 0, h: 0 });
 
-  private ctx: CanvasRenderingContext2D | null = null;
+  private surface: CanvasSurface | null = null;
   private offscreen: HTMLCanvasElement | null = null;
-  private width = 0;
-  private height = 0;
-  private dpr = 1;
-  private resizeObserver: ResizeObserver | null = null;
-  private frame = 0;
-  private fallback = 0;
+
+  private get ctx(): CanvasRenderingContext2D | null {
+    return this.surface?.context ?? null;
+  }
+  private get width(): number {
+    return this.surface?.width ?? 0;
+  }
+  private get height(): number {
+    return this.surface?.height ?? 0;
+  }
+  private get dpr(): number {
+    return this.surface?.pixelRatio ?? 1;
+  }
   private dragStart: { x: number; y: number } | null = null;
   private dragCenter: { x: number; y: number } | null = null;
 
@@ -166,21 +172,20 @@ export class GeometryExplorer {
       }
       const canvas = this.canvasRef().nativeElement;
       const container = canvas.parentElement;
-      this.ctx = canvas.getContext('2d');
+      if (!container) {
+        return;
+      }
       this.offscreen = document.createElement('canvas');
 
-      if (container && typeof ResizeObserver !== 'undefined') {
-        this.resizeObserver = new ResizeObserver(() => this.resize());
-        this.resizeObserver.observe(container);
-      }
-
-      this.resize();
-
-      this.destroyRef.onDestroy(() => {
-        this.resizeObserver?.disconnect();
-        cancelAnimationFrame(this.frame);
-        cancelAnimationFrame(this.fallback);
+      this.surface = new CanvasSurface({
+        canvas,
+        container,
+        draw: () => this.draw(),
+        onResize: (size) => this.canvasSize.set(size),
       });
+      this.surface.resize();
+
+      this.destroyRef.onDestroy(() => this.surface?.destroy());
     });
   }
 
@@ -290,6 +295,33 @@ export class GeometryExplorer {
     this.dragging.set(false);
   }
 
+  panBy(dx: number, dy: number): void {
+    if (this.mode() === 'fractal') {
+      const worldPerPixel = this.span() / Math.max(1, this.width);
+      this.centerX.update((value) => value - dx * worldPerPixel);
+      this.centerY.update((value) => value + dy * worldPerPixel);
+    } else if (this.mode() === 'mobius') {
+      this.yaw.update((value) => value + dx * 0.008);
+      this.pitch.set(clamp(this.pitch() + dy * 0.008, -1.3, 1.3));
+    }
+  }
+
+  zoomBy(factor: number): void {
+    if (this.mode() === 'fractal') {
+      this.span.set(clamp(this.span() / factor, 1e-6, 8));
+    } else if (this.mode() === 'mobius') {
+      this.pitch.set(clamp(this.pitch() + (factor - 1) * 0.5, -1.3, 1.3));
+    }
+  }
+
+  resetView(): void {
+    if (this.mode() === 'fractal') {
+      this.resetFractalView();
+    } else if (this.mode() === 'mobius') {
+      this.resetMobius();
+    }
+  }
+
   onWheel(event: WheelEvent): void {
     if (this.mode() === 'circle') {
       return;
@@ -309,46 +341,11 @@ export class GeometryExplorer {
   }
 
   private resize(): void {
-    const canvas = this.canvasRef().nativeElement;
-    const container = canvas.parentElement;
-    if (!container) {
-      return;
-    }
-    const rect = container.getBoundingClientRect();
-    const width = Math.max(1, Math.round(rect.width));
-    const height = Math.max(1, Math.round(rect.height));
-    const dpr = Math.min(window.devicePixelRatio || 1, 2.5);
-
-    if (width === this.width && height === this.height && dpr === this.dpr) {
-      return;
-    }
-
-    this.width = width;
-    this.height = height;
-    this.dpr = dpr;
-    canvas.width = Math.round(width * dpr);
-    canvas.height = Math.round(height * dpr);
-    this.canvasSize.set({ w: width, h: height });
-    this.scheduleDraw();
+    this.surface?.resize();
   }
 
   private scheduleDraw(): void {
-    if (!this.ctx || this.frame) {
-      return;
-    }
-    this.frame = requestAnimationFrame(() => {
-      cancelAnimationFrame(this.frame);
-      clearTimeout(this.fallback);
-      this.frame = 0;
-      this.fallback = 0;
-      this.draw();
-    });
-    this.fallback = window.setTimeout(() => {
-      cancelAnimationFrame(this.frame);
-      this.frame = 0;
-      this.fallback = 0;
-      this.draw();
-    }, 100);
+    this.surface?.requestDraw();
   }
 
   private draw(): void {

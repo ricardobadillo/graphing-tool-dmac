@@ -1,0 +1,63 @@
+:host {
+  display: block;
+}
+
+.limits-stage {
+  background:
+    radial-gradient(ellipse at 50% 45%, rgb(52 211 153 / 0.08) 0%, transparent 62%),
+    radial-gradient(ellipse at 86% 88%, rgb(56 189 248 / 0.07) 0%, transparent 55%), #080d19;
+}
+
+.field-label {
+  display: block;
+  margin-bottom: 0.375rem;
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  color: rgb(100 116 139);
+}
+
+.field-input {
+  width: 100%;
+  padding: 0.5rem 0.625rem;
+  border: 1px solid rgb(255 255 255 / 0.1);
+  border-radius: 0.625rem;
+  background: #080d19;
+  color: rgb(226 232 240);
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 12px;
+  outline: none;
+  transition:
+    border-color 150ms ease,
+    box-shadow 150ms ease;
+}
+
+.field-input:focus {
+  border-color: rgb(52 211 153 / 0.6);
+  box-shadow: 0 0 0 3px rgb(52 211 153 / 0.14);
+}
+
+.preset-chip {
+  padding: 0.3rem 0.55rem;
+  border: 1px solid rgb(255 255 255 / 0.1);
+  border-radius: 999px;
+  background: rgb(255 255 255 / 0.03);
+  color: rgb(148 163 184);
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 10px;
+  transition:
+    border-color 150ms ease,
+    background-color 150ms ease,
+    color 150ms ease;
+}
+
+.preset-chip:hover {
+  border-color: rgb(52 211 153 / 0.4);
+  background: rgb(52 211 153 / 0.08);
+  color: rgb(167 243 208);
+}
+
+.preset-chip:focus-visible {
+  outline: 2px solid rgb(52 211 153 / 0.7);
+  outline-offset: 2px;
+}

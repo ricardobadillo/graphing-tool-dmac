@@ -1,3 +1,7 @@
+import { mulberry32 } from '../shared/math-utils';
+
+export { mulberry32 };
+
 export type SortAlgorithm = 'bubble' | 'selection' | 'insertion' | 'merge' | 'quick' | 'heap';
 export type SortDistribution = 'random' | 'nearly' | 'reversed' | 'fewUnique';
 export type SortTone = 'compare' | 'swap' | 'sorted' | 'pivot' | 'active' | 'write';
@@ -540,7 +544,6 @@ function quickSort(input: number[], record: boolean): SortRun {
     }
 
     if (i !== hi) {
-      const left = a[i];
       const right = a[hi];
       [a[i], a[hi]] = [a[hi], a[i]];
       r.write();
@@ -668,18 +671,6 @@ export function runSort(algorithm: SortAlgorithm, input: number[], recordFrames 
     case 'heap':
       return heapSort(input, recordFrames);
   }
-}
-
-/** PRNG determinista para reproducir arreglos entre servidor y cliente. */
-export function mulberry32(seed: number): () => number {
-  let state = seed;
-  return () => {
-    state |= 0;
-    state = (state + 0x6d2b79f5) | 0;
-    let value = Math.imul(state ^ (state >>> 15), 1 | state);
-    value = (value + Math.imul(value ^ (value >>> 7), 61 | value)) ^ value;
-    return ((value ^ (value >>> 14)) >>> 0) / 4294967296;
-  };
 }
 
 export function generateArray(

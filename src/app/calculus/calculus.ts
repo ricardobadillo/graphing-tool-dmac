@@ -1,6 +1,11 @@
 import { derivative, type EvalFunction } from 'mathjs/number';
-import { createPlotFunction, evaluateAt, normalizeExpression } from '../graphing/expression';
-import { formatExpressionFractions, formatFraction } from '../number-format';
+import {
+  createPlotFunction,
+  evaluateAt,
+  normalizeExpression,
+  toSymbolicExpression,
+} from '../shared/expression';
+import { formatExpressionFractions, formatFraction } from '../shared/exact-number';
 
 export type RiemannMethod = 'left' | 'right' | 'midpoint' | 'trapezoid';
 
@@ -52,13 +57,10 @@ export function compileCalculusFunction(expression: string): CalculusFunction {
   let symbolicDerivative: string | null = null;
 
   if (!entry.error && normalized) {
-    // mathjs usa log como logaritmo natural. Si el usuario escribió log
-    // (base 10 en el graficador), evitamos una derivada simbólica incorrecta.
-    const usesBase10Log = /\blog\s*\(/.test(normalized);
-    if (!usesBase10Log) {
+    const symbolic = toSymbolicExpression(expression);
+    if (symbolic) {
       try {
-        const safe = normalized.replace(/\bln\s*\(/g, 'log(');
-        symbolicDerivative = formatExpressionFractions(derivative(safe, 'x').toString());
+        symbolicDerivative = formatExpressionFractions(derivative(symbolic, 'x').toString());
       } catch {
         symbolicDerivative = null;
       }

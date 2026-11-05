@@ -1,59 +1,119 @@
-# GraphingToolDmac
+# VisualLab
 
-This project was generated using [Angular CLI](https://github.com/angular/angular-cli) version 22.1.8.
+Laboratorio interactivo de matemáticas y programación. Cada herramienta se ejecuta en el navegador y está pensada para clase, estudio y exploración: funciones, cálculo, series, álgebra lineal, conjuntos, complejos, enteros gaussianos, estadística, optimización, geometría, estructuras de datos y algoritmos.
 
-## Development server
+## Stack
 
-To start a local development server, run:
+- **Angular 22** standalone, signals y `ChangeDetectionStrategy.OnPush`.
+- **Canvas 2D** para las visualizaciones interactivas.
+- **mathjs** (`mathjs/number`) para evaluación, derivadas y series.
+- **Tailwind CSS 4** para la interfaz.
+- **SSR + prerender** con 14 rutas estáticas.
+- **Vitest** para tests unitarios.
 
-```bash
-ng serve
-```
-
-Once the server is running, open your browser and navigate to `http://localhost:4200/`. The application will automatically reload whenever you modify any of the source files.
-
-## Code scaffolding
-
-Angular CLI includes powerful code scaffolding tools. To generate a new component, run:
+## Desarrollo
 
 ```bash
-ng generate component component-name
+npm install
+npm start
 ```
 
-For a complete list of available schematics (such as `components`, `directives`, or `pipes`), run:
+La aplicación queda disponible en `http://localhost:4200/`.
+
+## Scripts
+
+| Script                                 | Descripción                                    |
+| -------------------------------------- | ---------------------------------------------- |
+| `npm start`                            | Servidor de desarrollo.                        |
+| `npm run build`                        | Build de producción con prerender.             |
+| `npm test`                             | Tests en modo watch.                           |
+| `npm run test:ci`                      | Tests una sola vez.                            |
+| `npm run typecheck`                    | Comprobación de tipos con TypeScript estricto. |
+| `npm run format`                       | Formatea con Prettier.                         |
+| `npm run format:check`                 | Verifica el formato.                           |
+| `npm run serve:ssr:graphing-tool-dmac` | Sirve el build SSR.                            |
+
+## Estructura
+
+```
+src/app/
+  shared/          Utilidades transversales (canvas, expresiones, números exactos, teclado)
+  graphing/        Graficador de funciones
+  calculus/        Derivadas, integrales y curvas polares/paramétricas
+  analysis/        Series de Taylor y Fourier
+  linear/          Álgebra lineal 2D
+  sets/            Teoría de conjuntos y diagramas de Venn
+  complex/         Números complejos
+  gaussian/        Enteros gaussianos Z[i]
+  statistics/      Distribuciones y teorema central del límite
+  optimization/    Programación lineal y descenso de gradiente
+  geometry/        Fractales, círculo trigonométrico y Möbius
+  structures/      Estructuras de datos interactivas
+  algorithms/      Ordenamientos y laboratorio Big-O
+  tools.ts         Registro único de herramientas, rutas y secciones
+  seo.ts           Títulos, descripciones y Open Graph por ruta
+```
+
+### Añadir una herramienta
+
+1. Crea el componente en su carpeta.
+2. Añade una entrada a `MATH_TOOLS` o `PROGRAMMING_TOOLS` en `src/app/tools.ts` con su `loadComponent`.
+3. No hace falta tocar rutas, navegación ni el hub: se generan desde el registro.
+
+## Estado compartido
+
+El graficador y el visualizador de estructuras permiten compartir su estado mediante un hash versionado (`#share=...`). La codificación y decodificación están en `src/app/share.ts` y tienen límite de tamaño.
+
+## Graficador de funciones
+
+- Análisis numérico de raíces, máximos, mínimos, inflexiones, monotonía y asíntotas.
+- Parámetros `a`, `b`, `c`, `d` con sliders y animación seleccionable de cualquiera de ellos.
+- Funciones por tramos con `piecewise(condición, expresión, …)`.
+- Regiones sombreadas para inecuaciones del tipo `y > f(x)`, `y ≥ f(x)`, `y < f(x)` y `y ≤ f(x)`.
+
+## Laboratorio de cálculo
+
+La ruta `/calculo-avanzado` reúne:
+
+- **L’Hôpital:** formas 0/0 e ∞/∞, derivadas sucesivas y comparación numérica.
+- **Optimización 1D:** puntos críticos, máximos/mínimos, concavidad, inflexiones y extremos globales.
+- **Integración:** definida, impropia, sustitución, por partes y fracciones parciales.
+- **Aplicaciones:** área entre curvas, longitud de arco y sólidos de revolución.
+- **EDOs:** separables y lineales de primer orden, campo de pendientes y solución RK4.
+- **Derivadas parciales:** gradiente, derivada direccional, plano tangente y mapa de calor.
+
+## Números exactos
+
+Los resultados matemáticos se muestran primero en forma exacta:
+
+- Racionales como fracciones: `1/2`, `9/5`, `-3/4`.
+- Múltiplos de π: `π/4`, `3π/2`.
+- Raíces simplificadas: `√2`, `2√2`, `√2/2`, `3√10/5`.
+- Autovalores y autovectores con radicales: `(1 + √5)/2`, `(2, -1 + √5)`.
+
+Cuando no existe una forma exacta reconocible se usa el decimal marcado con `≈`, por ejemplo `≈ 56.31°` o `≈ 68.3%`. Los ejes y las escalas de los gráficos conservan decimales porque son referencias de visualización, no resultados exactos.
+
+La lógica está centralizada en `src/app/shared/exact-number.ts`.
+
+## Accesibilidad
+
+- Las visualizaciones con paneo/zoom admiten teclado: flechas para mover, `+`/`-` para zoom y `0` para restablecer.
+- Los canvas tienen etiquetas descriptivas y son enfocables.
+- Las animaciones respetan `prefers-reduced-motion` en los módulos que las usan.
+
+## Tests
 
 ```bash
-ng generate --help
+npm run test:ci
 ```
 
-## Building
+La suite cubre los motores de cálculo, expresión, series, estadística, optimización, conjuntos, complejos, gaussianos, estructuras, algoritmos, enlaces compartidos y registro de herramientas.
 
-To build the project run:
+## Build y despliegue
 
 ```bash
-ng build
+npm run build
+npm run serve:ssr:graphing-tool-dmac
 ```
 
-This will compile your project and store the build artifacts in the `dist/` directory. By default, the production build optimizes your application for performance and speed.
-
-## Running unit tests
-
-To execute unit tests with the [Vitest](https://vitest.dev/) test runner, use the following command:
-
-```bash
-ng test
-```
-
-## Running end-to-end tests
-
-For end-to-end (e2e) testing, run:
-
-```bash
-ng e2e
-```
-
-Angular CLI does not come with an end-to-end testing framework by default. You can choose one that suits your needs.
-
-## Additional Resources
-
-For more information on using the Angular CLI, including detailed command references, visit the [Angular CLI Overview and Command Reference](https://angular.dev/tools/cli) page.
+El build genera rutas prerenderizadas con título, descripción y metadatos Open Graph propios. Para desplegar en producción, define `PORT` si el servidor SSR debe escuchar en otro puerto.

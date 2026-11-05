@@ -1,0 +1,185 @@
+<section class="grid gap-4 lg:grid-cols-[minmax(300px,360px)_minmax(0,1fr)]">
+  <aside class="flex flex-col gap-4">
+    <div class="rounded-2xl border border-white/10 bg-white/[0.03] p-4 shadow-2xl shadow-black/20">
+      <h2 class="text-sm font-semibold text-white">Función e intervalo</h2>
+
+      <label class="mt-3 block">
+        <span class="lab-field-label">f(x)</span>
+        <input
+          class="lab-input"
+          type="text"
+          [value]="expression()"
+          (input)="onExpressionInput($event)"
+          spellcheck="false"
+          autocomplete="off"
+          aria-label="Función para optimizar"
+        />
+      </label>
+
+      <div class="mt-3 grid grid-cols-2 gap-2">
+        <label class="block">
+          <span class="lab-field-label">a</span>
+          <input
+            class="lab-input"
+            type="text"
+            [value]="aInput()"
+            (input)="onAInput($event)"
+            aria-label="Extremo izquierdo"
+          />
+        </label>
+        <label class="block">
+          <span class="lab-field-label">b</span>
+          <input
+            class="lab-input"
+            type="text"
+            [value]="bInput()"
+            (input)="onBInput($event)"
+            aria-label="Extremo derecho"
+          />
+        </label>
+      </div>
+
+      <div class="mt-2 flex flex-wrap gap-1.5">
+        @for (preset of presets; track preset.label) {
+          <button type="button" class="lab-chip" (click)="applyPreset(preset)">
+            {{ preset.label }}
+          </button>
+        }
+      </div>
+
+      @if (!intervalValid()) {
+        <p class="mt-3 text-[11px] text-rose-300">El intervalo debe cumplir a &lt; b.</p>
+      }
+      @if (result().error) {
+        <p class="mt-3 text-[11px] text-rose-300">{{ result().error }}</p>
+      }
+
+      <div class="mt-4 border-t border-white/5 pt-3">
+        <p class="lab-field-label">Criterio</p>
+        <p class="mt-1 text-[11px] leading-relaxed text-slate-400">
+          f′ = 0 localiza puntos críticos. f″ &gt; 0 indica mínimo; f″ &lt; 0 indica máximo. Los
+          extremos del intervalo también compiten por el máximo y mínimo globales.
+        </p>
+      </div>
+    </div>
+
+    <div class="rounded-2xl border border-white/10 bg-white/[0.03] p-4 shadow-2xl shadow-black/20">
+      <h2 class="text-sm font-semibold text-white">Globales</h2>
+      <div class="mt-3 space-y-2 text-[11px]">
+        <p class="flex justify-between gap-2">
+          <span class="text-slate-500">Máximo global</span>
+          <span class="font-mono text-emerald-200">
+            {{ format(result().globalMax?.y ?? null) }}
+            @if (result().globalMax; as point) {
+              <span class="text-slate-500">en x = {{ format(point.x) }}</span>
+            }
+          </span>
+        </p>
+        <p class="flex justify-between gap-2">
+          <span class="text-slate-500">Mínimo global</span>
+          <span class="font-mono text-rose-200">
+            {{ format(result().globalMin?.y ?? null) }}
+            @if (result().globalMin; as point) {
+              <span class="text-slate-500">en x = {{ format(point.x) }}</span>
+            }
+          </span>
+        </p>
+      </div>
+    </div>
+  </aside>
+
+  <div class="flex flex-col gap-4">
+    <div
+      class="flex min-h-[340px] flex-col overflow-hidden rounded-2xl border border-white/10 bg-white/[0.03] shadow-2xl shadow-black/25"
+    >
+      <div class="relative flex-1 overflow-hidden">
+        <div class="lab-stage absolute inset-0"></div>
+        <canvas
+          #canvas
+          class="absolute inset-0 h-full w-full"
+          tabindex="0"
+          aria-label="Gráfica de la función con máximos, mínimos e inflexiones."
+        ></canvas>
+      </div>
+    </div>
+
+    <div class="grid gap-4 xl:grid-cols-[minmax(0,1.2fr)_minmax(0,1fr)]">
+      <div
+        class="rounded-2xl border border-white/10 bg-white/[0.03] p-4 shadow-2xl shadow-black/20"
+      >
+        <h2 class="text-sm font-semibold text-white">Puntos críticos</h2>
+        @if (result().maxima.length === 0 && result().minima.length === 0) {
+          <p class="mt-2 text-[11px] text-slate-500">No hay extremos interiores.</p>
+        } @else {
+          <div class="mt-3 overflow-x-auto">
+            <table class="w-full text-left text-[11px]">
+              <thead class="text-[9px] uppercase tracking-[0.1em] text-slate-500">
+                <tr class="border-b border-white/5">
+                  <th class="py-2 pr-3 font-medium">x</th>
+                  <th class="py-2 pr-3 font-medium">f(x)</th>
+                  <th class="py-2 pr-3 font-medium">Tipo</th>
+                  <th class="py-2 font-medium">f″(x)</th>
+                </tr>
+              </thead>
+              <tbody class="divide-y divide-white/5">
+                @for (point of result().maxima; track point.x) {
+                  <tr>
+                    <td class="py-2 pr-3 font-mono text-slate-300">{{ format(point.x) }}</td>
+                    <td class="py-2 pr-3 font-mono text-slate-300">{{ format(point.y) }}</td>
+                    <td class="py-2 pr-3 text-emerald-200">máximo</td>
+                    <td class="py-2 font-mono text-slate-400">
+                      {{ format(point.secondDerivative) }}
+                    </td>
+                  </tr>
+                }
+                @for (point of result().minima; track point.x) {
+                  <tr>
+                    <td class="py-2 pr-3 font-mono text-slate-300">{{ format(point.x) }}</td>
+                    <td class="py-2 pr-3 font-mono text-slate-300">{{ format(point.y) }}</td>
+                    <td class="py-2 pr-3 text-rose-200">mínimo</td>
+                    <td class="py-2 font-mono text-slate-400">
+                      {{ format(point.secondDerivative) }}
+                    </td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+          </div>
+        }
+      </div>
+
+      <div
+        class="rounded-2xl border border-white/10 bg-white/[0.03] p-4 shadow-2xl shadow-black/20"
+      >
+        <h2 class="text-sm font-semibold text-white">Concavidad</h2>
+        @if (result().concavity.length === 0) {
+          <p class="mt-2 text-[11px] text-slate-500">
+            No se detectaron intervalos de concavidad definida.
+          </p>
+        } @else {
+          <div class="mt-3 space-y-1.5">
+            @for (interval of result().concavity; track interval.from) {
+              <p class="flex justify-between gap-2 text-[11px]">
+                <span class="font-mono text-slate-400">
+                  {{ format(interval.from) }} → {{ format(interval.to) }}
+                </span>
+                <span
+                  [class.text-emerald-300]="interval.direction === 'up'"
+                  [class.text-rose-300]="interval.direction === 'down'"
+                >
+                  {{ interval.direction === 'up' ? 'cóncava hacia arriba' : 'cóncava hacia abajo' }}
+                </span>
+              </p>
+            }
+          </div>
+        }
+        <div class="mt-3 border-t border-white/5 pt-3">
+          <p class="lab-field-label">Inflexiones</p>
+          <p class="mt-1 font-mono text-[11px] text-amber-200">
+            {{ formatInflections(result().inflections) }}
+          </p>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>

@@ -27,10 +27,12 @@ export function encodeShare<T>(tool: ShareTool, data: T): string {
   return toBase64Url(JSON.stringify({ v: 1, tool, data } satisfies ShareEnvelope<T>));
 }
 
+const MAX_TOKEN_LENGTH = 64_000;
+
 export function decodeShare<T>(hash: string): ShareEnvelope<T> | null {
   const raw = hash.startsWith('#') ? hash.slice(1) : hash;
   const token = raw.startsWith('share=') ? raw.slice('share='.length) : raw;
-  if (!token) {
+  if (!token || token.length > MAX_TOKEN_LENGTH) {
     return null;
   }
 
@@ -46,6 +48,9 @@ export function decodeShare<T>(hash: string): ShareEnvelope<T> | null {
 }
 
 export function buildShareUrl<T>(tool: ShareTool, data: T): string {
+  if (typeof window === 'undefined') {
+    return '';
+  }
   const url = new URL(window.location.href);
   url.hash = `share=${encodeShare(tool, data)}`;
   return url.toString();
