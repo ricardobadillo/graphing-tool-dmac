@@ -1,0 +1,388 @@
+<div class="relative min-h-[calc(100dvh-3.5rem)] overflow-hidden bg-[#070b16] text-slate-100">
+  <div class="pointer-events-none absolute inset-0 -z-0 overflow-hidden">
+    <div
+      class="absolute -top-48 left-1/2 h-[560px] w-[900px] -translate-x-1/2 rounded-full bg-sky-500/10 blur-[130px]"
+    ></div>
+    <div
+      class="absolute -bottom-32 right-0 h-[420px] w-[560px] rounded-full bg-fuchsia-500/10 blur-[130px]"
+    ></div>
+  </div>
+
+  <div
+    class="relative z-10 mx-auto flex min-h-[calc(100dvh-3.5rem)] w-full max-w-7xl flex-col gap-5 px-4 py-6 sm:px-6 lg:py-8"
+  >
+    <header class="flex flex-wrap items-end justify-between gap-4">
+      <div>
+        <div
+          class="mb-3 inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.2em] text-sky-300/90"
+        >
+          <span
+            class="h-1.5 w-1.5 rounded-full bg-sky-400 shadow-[0_0_10px_2px_rgba(56,189,248,0.8)]"
+          ></span>
+          Graficador dinámico
+        </div>
+
+        <h1 class="text-3xl font-semibold tracking-tight text-white sm:text-4xl">
+          Explora funciones en tiempo real
+        </h1>
+        <p class="mt-2 max-w-xl text-sm leading-relaxed text-slate-400">
+          Escribe una expresión matemática, desplázate por el plano y ajusta el zoom. Todo se
+          calcula y dibuja en el navegador.
+        </p>
+      </div>
+
+      <div class="flex flex-wrap items-center gap-2 text-[11px] text-slate-400">
+        <button
+          type="button"
+          class="inline-flex items-center gap-1.5 rounded-lg border border-white/10 bg-white/5 px-2.5 py-1.5 transition hover:border-sky-400/40 hover:bg-sky-400/10 hover:text-sky-200"
+          (click)="copyShareLink()"
+          title="Copiar un enlace con las funciones y la vista actual"
+        >
+          <svg
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="1.7"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            aria-hidden="true"
+            class="h-3.5 w-3.5"
+          >
+            <circle cx="18" cy="5" r="2.4" />
+            <circle cx="6" cy="12" r="2.4" />
+            <circle cx="18" cy="19" r="2.4" />
+            <path d="M8.2 10.8 15.8 6.2M8.2 13.2l7.6 4.6" />
+          </svg>
+          Compartir
+        </button>
+        <span class="rounded-lg border border-white/10 bg-white/5 px-2.5 py-1.5 font-mono"
+          >Canvas 2D</span
+        >
+        <span class="rounded-lg border border-white/10 bg-white/5 px-2.5 py-1.5 font-mono"
+          >mathjs</span
+        >
+      </div>
+    </header>
+
+    <section class="grid flex-1 gap-4 lg:grid-cols-[minmax(300px,360px)_minmax(0,1fr)]">
+      <aside
+        class="flex flex-col gap-4 rounded-2xl border border-white/10 bg-white/[0.03] p-4 shadow-2xl shadow-black/20 backdrop-blur"
+      >
+        <div class="flex items-center justify-between">
+          <h2 class="text-sm font-semibold text-slate-200">Funciones</h2>
+          <span class="rounded-md bg-white/5 px-2 py-0.5 font-mono text-[11px] text-slate-400">
+            {{ functions().length }}
+          </span>
+        </div>
+
+        <div class="fn-list flex max-h-[340px] flex-col gap-2.5 overflow-y-auto pr-1">
+          @for (fn of functions(); track fn.id; let index = $index) {
+            <div
+              class="fn-card rounded-xl border p-3 transition-colors"
+              [class.is-error]="!!fn.error"
+            >
+              <div class="flex items-center gap-2">
+                <input
+                  type="color"
+                  class="color-swatch shrink-0"
+                  [value]="fn.color"
+                  (input)="onColorInput(fn.id, $event)"
+                  [attr.aria-label]="'Color de la función ' + (index + 1)"
+                  [title]="'Cambiar color'"
+                />
+
+                <span class="shrink-0 font-mono text-xs text-slate-500">f{{ index + 1 }}(x) =</span>
+
+                <input
+                  type="text"
+                  class="min-w-0 flex-1 rounded-lg border border-white/10 bg-[#080d19] px-2 py-1.5 font-mono text-sm text-slate-100 outline-none transition placeholder:text-slate-600 focus:border-sky-400/60 focus:ring-2 focus:ring-sky-400/20"
+                  [class.is-error]="!!fn.error"
+                  [value]="fn.expression"
+                  (input)="onExpressionInput(fn.id, $event)"
+                  placeholder="sin(x)"
+                  spellcheck="false"
+                  autocomplete="off"
+                  autocapitalize="off"
+                  [attr.aria-label]="'Expresión de la función ' + (index + 1)"
+                />
+
+                <button
+                  type="button"
+                  class="icon-btn"
+                  (click)="toggleVisibility(fn.id)"
+                  [attr.aria-label]="
+                    fn.visible ? 'Ocultar función ' + (index + 1) : 'Mostrar función ' + (index + 1)
+                  "
+                  [title]="fn.visible ? 'Ocultar' : 'Mostrar'"
+                >
+                  @if (fn.visible) {
+                    <svg
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      stroke-width="1.7"
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                      aria-hidden="true"
+                    >
+                      <path
+                        d="M2.5 12S6 5.5 12 5.5 21.5 12 21.5 12 18 18.5 12 18.5 2.5 12 2.5 12Z"
+                      />
+                      <circle cx="12" cy="12" r="3" />
+                    </svg>
+                  } @else {
+                    <svg
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      stroke-width="1.7"
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                      aria-hidden="true"
+                    >
+                      <path d="M3 3l18 18" />
+                      <path d="M10.6 6.1A9.8 9.8 0 0 1 12 6c6 0 9.5 6 9.5 6a17 17 0 0 1-3.2 3.7" />
+                      <path d="M6.6 6.7A17.5 17.5 0 0 0 2.5 12S6 18 12 18a9.6 9.6 0 0 0 4.2-.9" />
+                    </svg>
+                  }
+                </button>
+
+                <button
+                  type="button"
+                  class="icon-btn icon-btn-danger"
+                  (click)="removeFunction(fn.id)"
+                  [attr.aria-label]="'Eliminar función ' + (index + 1)"
+                  title="Eliminar"
+                >
+                  <svg
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="1.8"
+                    stroke-linecap="round"
+                    aria-hidden="true"
+                  >
+                    <path d="M6 6l12 12M18 6 6 18" />
+                  </svg>
+                </button>
+              </div>
+
+              @if (fn.error) {
+                <p class="mt-2 flex items-start gap-1.5 text-[11px] leading-snug text-rose-300">
+                  <svg
+                    class="mt-px h-3.5 w-3.5 shrink-0"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="1.8"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    aria-hidden="true"
+                  >
+                    <circle cx="12" cy="12" r="9" />
+                    <path d="M12 8v5" />
+                    <path d="M12 16.5h.01" />
+                  </svg>
+                  <span>{{ fn.error }}</span>
+                </p>
+              }
+            </div>
+          }
+
+          @if (functions().length === 0) {
+            <p
+              class="rounded-xl border border-dashed border-white/10 px-3 py-8 text-center text-xs text-slate-500"
+            >
+              No hay funciones. Añade una para empezar a graficar.
+            </p>
+          }
+        </div>
+
+        <button
+          type="button"
+          class="flex items-center justify-center gap-2 rounded-xl border border-sky-400/30 bg-sky-400/10 px-3 py-2.5 text-sm font-medium text-sky-200 transition hover:border-sky-400/60 hover:bg-sky-400/15 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sky-400/70"
+          (click)="addFunction()"
+        >
+          <svg
+            class="h-4 w-4"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+            stroke-linecap="round"
+            aria-hidden="true"
+          >
+            <path d="M12 5v14M5 12h14" />
+          </svg>
+          Añadir función
+        </button>
+
+        <div class="mt-auto space-y-2 border-t border-white/5 pt-3">
+          <p class="text-[10px] font-semibold uppercase tracking-[0.15em] text-slate-500">
+            Ejemplos rápidos
+          </p>
+          <div class="flex flex-wrap gap-1.5">
+            @for (preset of presets; track preset) {
+              <button
+                type="button"
+                class="rounded-lg border border-white/10 bg-white/[0.03] px-2 py-1 font-mono text-[11px] text-slate-300 transition hover:border-sky-400/40 hover:bg-sky-400/10 hover:text-sky-200"
+                (click)="addFunction(preset)"
+              >
+                {{ preset }}
+              </button>
+            }
+          </div>
+        </div>
+      </aside>
+
+      <div
+        class="flex h-[460px] flex-col overflow-hidden rounded-2xl border border-white/10 shadow-2xl shadow-black/30 sm:h-[540px] lg:h-auto lg:min-h-[580px]"
+      >
+        <div class="plot-surface relative flex-1 overflow-hidden">
+          <canvas
+            #baseCanvas
+            class="absolute inset-0 h-full w-full touch-none"
+            [style.cursor]="dragging() ? 'grabbing' : 'crosshair'"
+            (pointerdown)="onPointerDown($event)"
+            (pointermove)="onPointerMove($event)"
+            (pointerup)="onPointerUp($event)"
+            (pointercancel)="onPointerUp($event)"
+            (pointerleave)="onPointerLeave()"
+            aria-label="Área del gráfico. Arrastra para desplazar el plano y usa la rueda o la pinza para hacer zoom."
+          ></canvas>
+
+          <canvas
+            #overlayCanvas
+            class="pointer-events-none absolute inset-0 h-full w-full"
+            aria-hidden="true"
+          ></canvas>
+
+          @if (hoverData(); as hd) {
+            <div
+              class="pointer-events-none absolute right-3 top-3 z-10 w-[min(250px,62%)] rounded-xl border border-white/10 bg-[#0b1224]/90 p-3 shadow-xl shadow-black/40 backdrop-blur"
+            >
+              <p class="font-mono text-[11px] text-slate-400">
+                x = <span class="text-slate-100">{{ formatCoordinate(hd.x) }}</span>
+              </p>
+
+              @if (hd.values.length > 0) {
+                <div class="mt-2 space-y-1.5">
+                  @for (value of hd.values; track value.id) {
+                    <div class="flex items-center justify-between gap-3 text-[11px]">
+                      <span class="flex min-w-0 items-center gap-1.5 font-mono text-slate-300">
+                        <span
+                          class="h-2 w-2 shrink-0 rounded-full"
+                          [style.background]="value.color"
+                        ></span>
+                        <span class="truncate" [title]="value.expression">{{
+                          value.expression
+                        }}</span>
+                      </span>
+                      <span class="shrink-0 font-mono text-slate-100">
+                        {{ formatCoord(value.value) }}
+                      </span>
+                    </div>
+                  }
+                </div>
+              }
+            </div>
+          }
+
+          <div class="absolute bottom-3 right-3 z-10 flex flex-col gap-1.5">
+            <button
+              type="button"
+              class="canvas-btn"
+              (click)="zoomBy(1.4)"
+              aria-label="Acercar"
+              title="Acercar"
+            >
+              <svg
+                class="h-4 w-4"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                aria-hidden="true"
+              >
+                <path d="M12 5v14M5 12h14" />
+              </svg>
+            </button>
+
+            <button
+              type="button"
+              class="canvas-btn"
+              (click)="zoomBy(1 / 1.4)"
+              aria-label="Alejar"
+              title="Alejar"
+            >
+              <svg
+                class="h-4 w-4"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                aria-hidden="true"
+              >
+                <path d="M5 12h14" />
+              </svg>
+            </button>
+
+            <button
+              type="button"
+              class="canvas-btn"
+              (click)="resetView()"
+              aria-label="Restablecer vista"
+              title="Restablecer vista"
+            >
+              <svg
+                class="h-4 w-4"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="1.8"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                aria-hidden="true"
+              >
+                <path d="M3.5 12a8.5 8.5 0 1 0 2.6-6.1" />
+                <path d="M3 4.5v4.2h4.2" />
+              </svg>
+            </button>
+          </div>
+
+          <div
+            class="pointer-events-none absolute bottom-3 left-3 z-10 hidden rounded-lg border border-white/10 bg-[#0b1224]/80 px-2.5 py-1 font-mono text-[10px] text-slate-400 backdrop-blur sm:block"
+          >
+            {{ rangeLabel() }}
+          </div>
+
+          <div
+            class="pointer-events-none absolute left-3 top-3 z-10 rounded-lg border border-white/10 bg-[#0b1224]/80 px-2.5 py-1 text-[10px] text-slate-400 backdrop-blur sm:hidden"
+          >
+            Arrastra · pellizca para zoom
+          </div>
+        </div>
+
+        <div
+          class="flex flex-wrap items-center justify-between gap-2 border-t border-white/5 px-3 py-2 text-[11px] text-slate-500"
+        >
+          <span>Arrastra para mover · Rueda o pinza para zoom</span>
+          <span class="hidden font-mono sm:inline"
+            >ln(x) natural · log(x) base 10 · ^ potencia · pi, e</span
+          >
+        </div>
+      </div>
+    </section>
+  </div>
+
+  @if (toast(); as message) {
+    <div
+      class="fixed bottom-5 left-1/2 z-50 -translate-x-1/2 rounded-xl border border-sky-400/30 bg-[#080d19]/95 px-3.5 py-2 text-xs text-sky-100 shadow-2xl backdrop-blur"
+      role="status"
+    >
+      {{ message }}
+    </div>
+  }
+</div>

@@ -1,0 +1,373 @@
+<div class="relative min-h-[calc(100dvh-3.5rem)] overflow-hidden bg-[#070b16] text-slate-100">
+  <div class="pointer-events-none absolute inset-0 overflow-hidden">
+    <div
+      class="absolute -top-48 left-1/3 h-[520px] w-[820px] -translate-x-1/2 rounded-full bg-sky-500/10 blur-[130px]"
+    ></div>
+    <div
+      class="absolute -bottom-40 right-0 h-[420px] w-[520px] rounded-full bg-fuchsia-500/10 blur-[130px]"
+    ></div>
+  </div>
+
+  <div class="relative z-10 mx-auto flex w-full max-w-7xl flex-col gap-5 px-4 py-6 sm:px-6 lg:py-8">
+    <header class="flex flex-wrap items-end justify-between gap-4">
+      <div>
+        <div
+          class="mb-3 inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-3 py-1 text-[10px] font-semibold tracking-[0.18em] text-sky-300/90"
+        >
+          <span
+            class="h-1.5 w-1.5 rounded-full bg-sky-400 shadow-[0_0_10px_2px_rgba(56,189,248,0.8)]"
+          ></span>
+          Probabilidad y estadística
+        </div>
+
+        <h1 class="text-3xl font-semibold tracking-tight text-white sm:text-4xl">
+          Azar, distribuciones y medias
+        </h1>
+        <p class="mt-2 max-w-2xl text-sm leading-relaxed text-slate-400">
+          Explora distribuciones de probabilidad, calcula intervalos y observa cómo el teorema
+          central del límite convierte medias muestrales en una curva normal.
+        </p>
+      </div>
+
+      <div class="flex flex-wrap items-center gap-2 text-[11px] text-slate-400">
+        <span class="rounded-lg border border-white/10 bg-white/5 px-2.5 py-1.5 font-mono"
+          >Normal · binomial · Poisson</span
+        >
+        <span class="rounded-lg border border-white/10 bg-white/5 px-2.5 py-1.5 font-mono"
+          >TCL</span
+        >
+        <span class="rounded-lg border border-white/10 bg-white/5 px-2.5 py-1.5 font-mono"
+          >Probabilidad</span
+        >
+      </div>
+    </header>
+
+    <div class="flex flex-wrap items-center gap-2">
+      <button
+        type="button"
+        class="mode-tab"
+        [attr.data-active]="mode() === 'distribution'"
+        (click)="setMode('distribution')"
+      >
+        Distribuciones
+      </button>
+      <button
+        type="button"
+        class="mode-tab"
+        [attr.data-active]="mode() === 'clt'"
+        (click)="setMode('clt')"
+      >
+        Teorema central del límite
+      </button>
+    </div>
+
+    <section class="grid gap-4 lg:grid-cols-[minmax(0,1fr)_360px]">
+      <div
+        class="flex flex-col overflow-hidden rounded-2xl border border-white/10 bg-white/[0.03] shadow-2xl shadow-black/25"
+      >
+        <div
+          class="flex flex-wrap items-start justify-between gap-3 border-b border-white/5 px-4 py-3.5"
+        >
+          <div class="min-w-0">
+            <h2 class="flex items-center gap-2 text-sm font-semibold text-white">
+              {{ modeInfo().title }}
+              <span
+                class="rounded-full border border-sky-400/20 bg-sky-400/10 px-2 py-0.5 text-[10px] font-medium text-sky-200"
+              >
+                {{ modeInfo().label }}
+              </span>
+            </h2>
+            <p class="mt-0.5 text-xs text-slate-400">{{ modeInfo().subtitle }}</p>
+          </div>
+          <span class="rounded-md bg-white/5 px-2 py-0.5 font-mono text-[10px] text-slate-400">
+            {{ modeInfo().expression }}
+          </span>
+        </div>
+
+        <div class="statistics-stage relative h-[440px] overflow-hidden sm:h-[540px]">
+          <canvas
+            #canvas
+            class="absolute inset-0 h-full w-full"
+            aria-label="Gráfica de la distribución de probabilidad o del histograma de medias muestrales."
+          ></canvas>
+
+          <div
+            class="pointer-events-none absolute left-3 top-3 z-10 flex flex-wrap items-center gap-2.5 rounded-lg border border-white/10 bg-[#0b1224]/80 px-2.5 py-1.5 text-[10px] text-slate-400 backdrop-blur"
+          >
+            @if (mode() === 'distribution') {
+              <span class="inline-flex items-center gap-1"
+                ><span class="set-dot bg-violet-400"></span> {{ distributionLabel() }}</span
+              >
+              <span class="inline-flex items-center gap-1"
+                ><span class="set-dot bg-sky-400"></span> intervalo</span
+              >
+            } @else {
+              <span class="inline-flex items-center gap-1"
+                ><span class="set-dot bg-sky-400"></span> medias muestrales</span
+              >
+              <span class="inline-flex items-center gap-1"
+                ><span class="set-dot bg-amber-400"></span> normal teórica</span
+              >
+            }
+          </div>
+
+          <div
+            class="pointer-events-none absolute bottom-3 right-3 z-10 rounded-lg border border-white/10 bg-[#0b1224]/80 px-2.5 py-1 font-mono text-[10px] text-slate-400 backdrop-blur"
+          >
+            @if (mode() === 'distribution') {
+              {{ distributionLabel() }}
+            } @else {
+              n = {{ sampleSize() }} · 2000 muestras
+            }
+          </div>
+        </div>
+
+        <div class="flex min-h-[56px] items-center gap-2.5 border-t border-white/5 px-4 py-2.5">
+          <span class="h-1.5 w-1.5 shrink-0 rounded-full bg-sky-400/80"></span>
+          <p class="text-xs leading-relaxed text-slate-300">
+            @if (mode() === 'distribution') {
+              Para variables continuas se muestra la densidad; para discretas, la altura de cada
+              barra es P(X = k). El área o la suma del intervalo resaltado es su probabilidad.
+            } @else {
+              Al aumentar el tamaño de muestra, la desviación de las medias disminuye como σ/√n. La
+              curva amarilla es la normal teórica.
+            }
+          </p>
+        </div>
+
+        <div class="border-t border-white/5 px-4 py-2">
+          <p class="font-mono text-[10px] text-slate-500">
+            @if (mode() === 'distribution') {
+              normal · binomial · Poisson — media, varianza y probabilidad acumulada
+            } @else {
+              X̄ ≈ N(μ, σ/√n) — teorema central del límite
+            }
+          </p>
+        </div>
+      </div>
+
+      <aside class="flex flex-col gap-4">
+        @if (mode() === 'distribution') {
+          <div
+            class="rounded-2xl border border-white/10 bg-white/[0.03] p-4 shadow-2xl shadow-black/20"
+          >
+            <h2 class="text-sm font-semibold text-white">Distribución</h2>
+
+            <div class="mt-3 grid grid-cols-3 gap-1.5">
+              <button
+                type="button"
+                class="op-btn text-[11px]"
+                [attr.data-active]="distribution() === 'normal'"
+                (click)="setDistribution('normal')"
+              >
+                Normal
+              </button>
+              <button
+                type="button"
+                class="op-btn text-[11px]"
+                [attr.data-active]="distribution() === 'binomial'"
+                (click)="setDistribution('binomial')"
+              >
+                Binomial
+              </button>
+              <button
+                type="button"
+                class="op-btn text-[11px]"
+                [attr.data-active]="distribution() === 'poisson'"
+                (click)="setDistribution('poisson')"
+              >
+                Poisson
+              </button>
+            </div>
+
+            @if (distribution() === 'normal') {
+              <div class="mt-3 grid grid-cols-2 gap-2">
+                <label class="block">
+                  <span class="field-label">media μ</span>
+                  <input
+                    class="field-input"
+                    type="text"
+                    [value]="normalMeanInput()"
+                    (input)="onNumberInput('normalMean', $event)"
+                    aria-label="Media de la distribución normal"
+                  />
+                </label>
+                <label class="block">
+                  <span class="field-label">desviación σ</span>
+                  <input
+                    class="field-input"
+                    type="text"
+                    [value]="normalSdInput()"
+                    (input)="onNumberInput('normalSd', $event)"
+                    aria-label="Desviación típica de la distribución normal"
+                  />
+                </label>
+              </div>
+            } @else if (distribution() === 'binomial') {
+              <div class="mt-3 grid grid-cols-2 gap-2">
+                <label class="block">
+                  <span class="field-label">ensayos n</span>
+                  <input
+                    class="field-input"
+                    type="text"
+                    [value]="binomialNInput()"
+                    (input)="onNumberInput('binomialN', $event)"
+                    aria-label="Número de ensayos binomiales"
+                  />
+                </label>
+                <label class="block">
+                  <span class="field-label">probabilidad p</span>
+                  <input
+                    class="field-input"
+                    type="text"
+                    [value]="binomialPInput()"
+                    (input)="onNumberInput('binomialP', $event)"
+                    aria-label="Probabilidad de éxito binomial"
+                  />
+                </label>
+              </div>
+            } @else {
+              <label class="mt-3 block">
+                <span class="field-label">media λ</span>
+                <input
+                  class="field-input"
+                  type="text"
+                  [value]="poissonLambdaInput()"
+                  (input)="onNumberInput('poissonLambda', $event)"
+                  aria-label="Media de la distribución de Poisson"
+                />
+              </label>
+            }
+
+            <div class="mt-3 border-t border-white/5 pt-3">
+              <p class="field-label">Intervalo de probabilidad</p>
+              <div class="grid grid-cols-2 gap-2">
+                <input
+                  class="field-input"
+                  type="text"
+                  [value]="lowerInput()"
+                  (input)="onNumberInput('lower', $event)"
+                  aria-label="Límite inferior del intervalo"
+                />
+                <input
+                  class="field-input"
+                  type="text"
+                  [value]="upperInput()"
+                  (input)="onNumberInput('upper', $event)"
+                  aria-label="Límite superior del intervalo"
+                />
+              </div>
+            </div>
+          </div>
+
+          <div
+            class="rounded-2xl border border-white/10 bg-white/[0.03] p-4 shadow-2xl shadow-black/20"
+          >
+            <h2 class="text-sm font-semibold text-white">Resumen</h2>
+
+            <dl class="mt-3 space-y-1.5 text-[11px]">
+              <div class="flex items-center justify-between gap-2">
+                <dt class="text-slate-400">Media</dt>
+                <dd class="font-mono text-sky-300">{{ formatValue(stats().mean) }}</dd>
+              </div>
+              <div class="flex items-center justify-between gap-2">
+                <dt class="text-slate-400">Varianza</dt>
+                <dd class="font-mono text-slate-200">{{ formatValue(stats().variance) }}</dd>
+              </div>
+              <div class="flex items-center justify-between gap-2">
+                <dt class="text-slate-400">Desviación típica</dt>
+                <dd class="font-mono text-slate-200">{{ formatValue(stats().sd) }}</dd>
+              </div>
+            </dl>
+
+            <div class="mt-3 border-t border-white/5 pt-3">
+              <p class="text-[10px] text-slate-500">{{ intervalLabel() }}</p>
+              <p class="mt-1 text-2xl font-semibold tracking-tight text-sky-200">
+                {{ formatValue(intervalValue() * 100, 1) }}%
+              </p>
+              <p class="mt-1 text-[10px] leading-relaxed text-slate-500">
+                Calculado con la densidad o la suma de probabilidades del intervalo.
+              </p>
+            </div>
+          </div>
+        } @else {
+          <div
+            class="rounded-2xl border border-white/10 bg-white/[0.03] p-4 shadow-2xl shadow-black/20"
+          >
+            <h2 class="text-sm font-semibold text-white">Simulación</h2>
+
+            <div class="mt-3 grid grid-cols-2 gap-1.5">
+              <button
+                type="button"
+                class="op-btn text-[11px]"
+                [attr.data-active]="base() === 'uniform'"
+                (click)="setBase('uniform')"
+              >
+                Uniforme
+              </button>
+              <button
+                type="button"
+                class="op-btn text-[11px]"
+                [attr.data-active]="base() === 'exponential'"
+                (click)="setBase('exponential')"
+              >
+                Exponencial
+              </button>
+            </div>
+
+            <div class="mt-3 flex items-center justify-between">
+              <span class="field-label !mb-0">tamaño de muestra n</span>
+              <span class="font-mono text-xs text-sky-300">{{ sampleSize() }}</span>
+            </div>
+            <input
+              class="range-input mt-2 w-full"
+              type="range"
+              min="1"
+              max="50"
+              step="1"
+              [value]="sampleSize()"
+              (input)="onSampleSizeInput($event)"
+              aria-label="Tamaño de cada muestra"
+            />
+
+            <button type="button" class="resample-btn mt-3 w-full" (click)="resample()">
+              Nueva simulación
+            </button>
+
+            <p class="mt-3 text-[10px] leading-relaxed text-slate-500">
+              Se generan 2000 muestras independientes. La media de cada muestra se guarda y se
+              representa como histograma.
+            </p>
+          </div>
+
+          <div
+            class="rounded-2xl border border-white/10 bg-white/[0.03] p-4 shadow-2xl shadow-black/20"
+          >
+            <h2 class="text-sm font-semibold text-white">Resultados</h2>
+            <dl class="mt-3 space-y-1.5 text-[11px]">
+              <div class="flex items-center justify-between gap-2">
+                <dt class="text-slate-400">Media teórica</dt>
+                <dd class="font-mono text-sky-300">{{ formatValue(clt().theoreticalMean) }}</dd>
+              </div>
+              <div class="flex items-center justify-between gap-2">
+                <dt class="text-slate-400">Desviación teórica</dt>
+                <dd class="font-mono text-slate-200">{{ formatValue(clt().theoreticalSd) }}</dd>
+              </div>
+              <div class="flex items-center justify-between gap-2">
+                <dt class="text-slate-400">Media observada</dt>
+                <dd class="font-mono text-emerald-300">{{ formatValue(clt().observedMean) }}</dd>
+              </div>
+              <div class="flex items-center justify-between gap-2">
+                <dt class="text-slate-400">Desviación observada</dt>
+                <dd class="font-mono text-slate-200">{{ formatValue(clt().observedSd) }}</dd>
+              </div>
+            </dl>
+            <p class="mt-3 text-[10px] leading-relaxed text-slate-500">
+              La media de las medias se acerca a μ y su dispersión disminuye al crecer n.
+            </p>
+          </div>
+        }
+      </aside>
+    </section>
+  </div>
+</div>

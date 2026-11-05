@@ -1,0 +1,1260 @@
+<div
+  class="relative min-h-[calc(100dvh-3.5rem)] overflow-hidden bg-[#070b16] text-slate-100"
+  [class.presentation-mode]="presentationMode()"
+>
+  <div class="pointer-events-none absolute inset-0 overflow-hidden">
+    <div
+      class="absolute -top-48 left-1/3 h-[520px] w-[820px] -translate-x-1/2 rounded-full bg-sky-500/10 blur-[130px]"
+    ></div>
+    <div
+      class="absolute -bottom-40 right-0 h-[420px] w-[520px] rounded-full bg-violet-500/10 blur-[130px]"
+    ></div>
+  </div>
+
+  @if (presentationMode()) {
+    <button type="button" class="presentation-exit" (click)="togglePresentation()">
+      <svg
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        stroke-width="1.8"
+        stroke-linecap="round"
+        stroke-linejoin="round"
+        aria-hidden="true"
+      >
+        <path d="M4 4h16v12H4z" />
+        <path d="M9 20h6M12 16v4" />
+      </svg>
+      Salir de presentación
+    </button>
+  }
+
+  <div class="relative z-10 mx-auto flex w-full max-w-7xl flex-col gap-5 px-4 py-6 sm:px-6 lg:py-8">
+    <header class="hero flex flex-wrap items-end justify-between gap-4">
+      <div>
+        <div
+          class="mb-3 inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.2em] text-violet-300/90"
+        >
+          <span
+            class="h-1.5 w-1.5 rounded-full bg-violet-400 shadow-[0_0_10px_2px_rgba(167,139,250,0.8)]"
+          ></span>
+          Estructuras de datos
+        </div>
+
+        <h1 class="text-3xl font-semibold tracking-tight text-white sm:text-4xl">
+          Mira cómo trabajan por dentro
+        </h1>
+        <p class="mt-2 max-w-2xl text-sm leading-relaxed text-slate-400">
+          Pilas, colas, listas, árboles, heaps, tablas hash y grafos. Ejecuta una operación y avanza
+          paso a paso: cada movimiento se sincroniza con el pseudocódigo.
+        </p>
+      </div>
+
+      <div class="flex flex-wrap items-center gap-2 text-[11px] text-slate-400">
+        <button
+          type="button"
+          class="mini-btn"
+          (click)="togglePresentation()"
+          title="Modo presentación (P)"
+        >
+          <svg
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="1.7"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            aria-hidden="true"
+          >
+            <rect x="3" y="4" width="18" height="12" rx="2" />
+            <path d="M9 20h6M12 16v4" />
+          </svg>
+          Presentar
+        </button>
+        <button
+          type="button"
+          class="mini-btn"
+          (click)="copyShareLink()"
+          title="Copiar un enlace con el estado actual"
+        >
+          <svg
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="1.7"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            aria-hidden="true"
+          >
+            <circle cx="18" cy="5" r="2.4" />
+            <circle cx="6" cy="12" r="2.4" />
+            <circle cx="18" cy="19" r="2.4" />
+            <path d="M8.2 10.8 15.8 6.2M8.2 13.2l7.6 4.6" />
+          </svg>
+          Compartir
+        </button>
+        <span class="rounded-lg border border-white/10 bg-white/5 px-2.5 py-1.5 font-mono"
+          >Paso a paso</span
+        >
+        <span class="rounded-lg border border-white/10 bg-white/5 px-2.5 py-1.5 font-mono"
+          >SVG</span
+        >
+      </div>
+    </header>
+
+    <div class="grid grid-cols-2 gap-2 sm:grid-cols-4">
+      @for (item of structures; track item.key) {
+        <button
+          type="button"
+          class="structure-tab"
+          [attr.data-active]="active() === item.key"
+          (click)="selectStructure(item.key)"
+        >
+          <span class="structure-icon">
+            @switch (item.key) {
+              @case ('stack') {
+                <svg
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="1.6"
+                  aria-hidden="true"
+                >
+                  <rect x="5" y="15" width="14" height="4" rx="1.5" />
+                  <rect x="5" y="9" width="14" height="4" rx="1.5" />
+                  <rect x="5" y="3" width="14" height="4" rx="1.5" />
+                </svg>
+              }
+              @case ('queue') {
+                <svg
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="1.6"
+                  aria-hidden="true"
+                >
+                  <rect x="3" y="6" width="5" height="12" rx="1.5" />
+                  <rect x="10" y="6" width="5" height="12" rx="1.5" />
+                  <rect x="17" y="6" width="4" height="12" rx="1.5" />
+                  <path d="M3 21h18" stroke-linecap="round" />
+                </svg>
+              }
+              @case ('list') {
+                <svg
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="1.6"
+                  aria-hidden="true"
+                >
+                  <circle cx="5" cy="12" r="2.5" />
+                  <circle cx="12" cy="12" r="2.5" />
+                  <circle cx="19" cy="12" r="2.5" />
+                  <path d="M7.5 12h2M14.5 12h2" stroke-linecap="round" />
+                </svg>
+              }
+              @case ('bst') {
+                <svg
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="1.6"
+                  aria-hidden="true"
+                >
+                  <circle cx="12" cy="5" r="2.4" />
+                  <circle cx="6" cy="18" r="2.4" />
+                  <circle cx="18" cy="18" r="2.4" />
+                  <path d="M10.6 7.1 7.4 15.5M13.4 7.1l3.2 8.4" stroke-linecap="round" />
+                </svg>
+              }
+              @case ('avl') {
+                <svg
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="1.6"
+                  aria-hidden="true"
+                >
+                  <circle cx="12" cy="4" r="2.2" />
+                  <circle cx="6" cy="13" r="2.2" />
+                  <circle cx="18" cy="13" r="2.2" />
+                  <path d="M10.5 6 7.3 11M13.5 6l3.2 5M4 20h16" stroke-linecap="round" />
+                </svg>
+              }
+              @case ('heap') {
+                <svg
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="1.6"
+                  aria-hidden="true"
+                >
+                  <circle cx="12" cy="5" r="2.2" />
+                  <circle cx="6" cy="13" r="2.2" />
+                  <circle cx="18" cy="13" r="2.2" />
+                  <circle cx="3" cy="21" r="1.8" />
+                  <circle cx="9" cy="21" r="1.8" />
+                  <path
+                    d="M10.8 6.8 7.1 11.2M13.2 6.8l4.7 4.4M5.2 15.1 3.8 19M6.8 15.1 8.2 19"
+                    stroke-linecap="round"
+                  />
+                </svg>
+              }
+              @case ('hash') {
+                <svg
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="1.6"
+                  aria-hidden="true"
+                >
+                  <circle cx="4" cy="6" r="1.8" />
+                  <circle cx="4" cy="12" r="1.8" />
+                  <circle cx="4" cy="18" r="1.8" />
+                  <path d="M6 6h14M6 12h9M6 18h12" stroke-linecap="round" />
+                  <path d="M15 12h5" stroke-dasharray="2 2" stroke-linecap="round" />
+                </svg>
+              }
+              @case ('graph') {
+                <svg
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="1.6"
+                  aria-hidden="true"
+                >
+                  <circle cx="5" cy="6" r="2.2" />
+                  <circle cx="19" cy="6" r="2.2" />
+                  <circle cx="10" cy="18" r="2.2" />
+                  <circle cx="20" cy="18" r="2.2" />
+                  <path
+                    d="M7.2 6.2l9.6.4M6.2 8.1l2.3 7.8M11.8 16.8l6 1M17.4 8.7l1.8 7.2"
+                    stroke-linecap="round"
+                  />
+                </svg>
+              }
+            }
+          </span>
+
+          <span class="min-w-0 text-left">
+            <span class="block truncate text-sm font-semibold text-white">{{ item.label }}</span>
+            <span class="block text-[10px] uppercase tracking-[0.14em] text-slate-500">{{
+              item.short
+            }}</span>
+          </span>
+        </button>
+      }
+    </div>
+
+    <section class="grid gap-4 lg:grid-cols-[minmax(0,1fr)_340px]">
+      <div
+        class="flex flex-col overflow-hidden rounded-2xl border border-white/10 bg-white/[0.03] shadow-2xl shadow-black/25"
+      >
+        <div
+          class="flex flex-wrap items-start justify-between gap-3 border-b border-white/5 px-4 py-3.5"
+        >
+          <div class="min-w-0">
+            <h2 class="flex items-center gap-2 text-sm font-semibold text-white">
+              {{ activeMeta().label }}
+              <span
+                class="rounded-full border border-violet-400/20 bg-violet-400/10 px-2 py-0.5 text-[10px] font-medium text-violet-200"
+              >
+                {{ activeMeta().short }}
+              </span>
+            </h2>
+            <p class="mt-0.5 text-xs text-slate-400">{{ activeMeta().description }}</p>
+          </div>
+
+          <div class="flex flex-wrap gap-1.5">
+            @if (active() !== 'graph') {
+              <button
+                type="button"
+                class="mini-btn"
+                (click)="randomize()"
+                title="Generar datos aleatorios"
+              >
+                <svg
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="1.7"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  aria-hidden="true"
+                >
+                  <path
+                    d="M16 3h5v5M21 3l-7 7M8 21H3v-5M3 21l7-7M21 16v5h-5M14 14l7 7M3 8V3h5M10 10 3 3"
+                  />
+                </svg>
+                Aleatorio
+              </button>
+            }
+            <button
+              type="button"
+              class="mini-btn"
+              (click)="resetActive()"
+              title="Restaurar el estado inicial"
+            >
+              <svg
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="1.7"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                aria-hidden="true"
+              >
+                <path d="M3.5 12a8.5 8.5 0 1 0 2.6-6.1" />
+                <path d="M3 4.5v4.2h4.2" />
+              </svg>
+              Reiniciar
+            </button>
+          </div>
+        </div>
+
+        <div class="visual-stage relative h-[340px] overflow-hidden sm:h-[400px]">
+          @if (isEmpty()) {
+            <div class="empty-state">
+              <svg
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="1.4"
+                aria-hidden="true"
+              >
+                <rect x="4" y="4" width="16" height="16" rx="4" stroke-dasharray="3 3" />
+                <path d="M9 12h6" stroke-linecap="round" />
+              </svg>
+              <p class="text-sm font-medium text-slate-300">{{ emptyLabel() }}</p>
+              <p class="mt-1 max-w-[280px] text-center text-xs leading-relaxed text-slate-500">
+                {{ activeMeta().idle }}
+              </p>
+            </div>
+          } @else {
+            @switch (active()) {
+              @case ('stack') {
+                <div class="flex h-full flex-col items-center justify-end gap-2 px-4 pb-5 pt-6">
+                  <span
+                    class="text-[10px] font-semibold uppercase tracking-[0.25em] text-sky-300/80"
+                    >tope</span
+                  >
+                  @for (item of stackDisplay(); track item.index) {
+                    <div class="stack-box" [attr.data-tone]="toneFor('' + item.index)">
+                      <span>{{ item.value }}</span>
+                    </div>
+                  }
+                </div>
+              }
+
+              @case ('queue') {
+                <div class="flex h-full flex-col items-center justify-center gap-4 px-4">
+                  <div class="flex flex-wrap items-end justify-center gap-2">
+                    @for (value of queueView(); track $index) {
+                      <div class="flex flex-col items-center gap-1.5">
+                        <span
+                          class="h-4 text-[9px] font-semibold uppercase tracking-[0.16em] text-emerald-300/80"
+                        >
+                          {{ queueLabel($index) }}
+                        </span>
+                        <div class="queue-box" [attr.data-tone]="toneFor('' + $index)">
+                          {{ value }}
+                        </div>
+                      </div>
+                    }
+                  </div>
+                  <div
+                    class="h-px w-full max-w-md bg-gradient-to-r from-transparent via-emerald-400/30 to-transparent"
+                  ></div>
+                  <p class="text-[10px] uppercase tracking-[0.18em] text-slate-500">
+                    El frente sale primero
+                  </p>
+                </div>
+              }
+
+              @case ('list') {
+                <div class="flex h-full items-center overflow-x-auto px-6">
+                  <svg
+                    class="shrink-0"
+                    [attr.viewBox]="'0 0 ' + listWidth() + ' 120'"
+                    [style.width.px]="listWidth()"
+                    height="120"
+                    role="img"
+                    aria-label="Lista enlazada"
+                  >
+                    <defs>
+                      <marker
+                        id="list-arrow"
+                        viewBox="0 0 10 10"
+                        refX="8"
+                        refY="5"
+                        markerWidth="6"
+                        markerHeight="6"
+                        orient="auto-start-reverse"
+                      >
+                        <path d="M 0 0 L 10 5 L 0 10 z" fill="rgba(148, 163, 184, 0.65)" />
+                      </marker>
+                    </defs>
+
+                    <text x="73" y="14" text-anchor="middle" class="list-label">head</text>
+
+                    @for (item of listItems(); track item.id) {
+                      <g
+                        class="list-node"
+                        [attr.data-tone]="toneFor(item.id)"
+                        [attr.transform]="'translate(' + (30 + item.index * 132) + ', 34)'"
+                      >
+                        <rect class="node-body" width="86" height="52" rx="14" />
+                        <text class="node-value" x="43" y="32" text-anchor="middle">
+                          {{ item.value }}
+                        </text>
+                      </g>
+
+                      @if (item.index < listView().length - 1) {
+                        <line
+                          class="list-edge"
+                          [attr.x1]="30 + item.index * 132 + 86"
+                          y1="60"
+                          [attr.x2]="30 + (item.index + 1) * 132"
+                          y2="60"
+                          marker-end="url(#list-arrow)"
+                        />
+                      } @else {
+                        <line
+                          class="list-edge"
+                          [attr.x1]="30 + item.index * 132 + 86"
+                          y1="60"
+                          [attr.x2]="30 + item.index * 132 + 132"
+                          y2="60"
+                          marker-end="url(#list-arrow)"
+                        />
+                        <text class="list-label" [attr.x]="30 + item.index * 132 + 148" y="64">
+                          null
+                        </text>
+                      }
+                    }
+                  </svg>
+                </div>
+              }
+
+              @case ('bst') {
+                <div class="flex h-full items-center justify-center p-3">
+                  <svg
+                    class="h-full w-full"
+                    [attr.viewBox]="'0 0 ' + treeLayout().width + ' ' + treeLayout().height"
+                    preserveAspectRatio="xMidYMid meet"
+                    role="img"
+                    aria-label="Árbol binario de búsqueda"
+                  >
+                    <g class="tree-edges">
+                      @for (edge of treeLayout().edges; track edge.id) {
+                        <line
+                          [attr.x1]="edge.x1"
+                          [attr.y1]="edge.y1"
+                          [attr.x2]="edge.x2"
+                          [attr.y2]="edge.y2"
+                        />
+                      }
+                    </g>
+
+                    @for (item of treeLayout().nodes; track item.id) {
+                      <g
+                        class="tree-node"
+                        [attr.data-tone]="toneFor(item.id)"
+                        [attr.transform]="'translate(' + item.x + ',' + item.y + ')'"
+                      >
+                        <circle class="node-body" r="21" />
+                        <text class="node-value" text-anchor="middle" dominant-baseline="central">
+                          {{ item.node.value }}
+                        </text>
+                      </g>
+                    }
+                  </svg>
+                </div>
+              }
+
+              @case ('avl') {
+                <div class="flex h-full items-center justify-center p-3">
+                  <svg
+                    class="h-full w-full"
+                    [attr.viewBox]="'0 0 ' + treeLayout().width + ' ' + treeLayout().height"
+                    preserveAspectRatio="xMidYMid meet"
+                    role="img"
+                    aria-label="Árbol AVL con factores de balance"
+                  >
+                    <g class="tree-edges">
+                      @for (edge of treeLayout().edges; track edge.id) {
+                        <line
+                          [attr.x1]="edge.x1"
+                          [attr.y1]="edge.y1"
+                          [attr.x2]="edge.x2"
+                          [attr.y2]="edge.y2"
+                        />
+                      }
+                    </g>
+
+                    @for (item of treeLayout().nodes; track item.id) {
+                      <g
+                        class="tree-node"
+                        [attr.data-tone]="toneFor(item.id)"
+                        [attr.transform]="'translate(' + item.x + ',' + item.y + ')'"
+                      >
+                        <circle class="node-body" r="21" />
+                        <text class="node-value" text-anchor="middle" dominant-baseline="central">
+                          {{ item.node.value }}
+                        </text>
+                        <text class="balance-value" y="33" text-anchor="middle">
+                          b={{ balanceFor(item.id) }}
+                        </text>
+                      </g>
+                    }
+                  </svg>
+                </div>
+              }
+
+              @case ('heap') {
+                <div class="flex h-full flex-col">
+                  <div class="min-h-0 flex-1 p-3">
+                    <svg
+                      class="h-full w-full"
+                      [attr.viewBox]="'0 0 ' + heapLayout().width + ' ' + heapLayout().height"
+                      preserveAspectRatio="xMidYMid meet"
+                      role="img"
+                      aria-label="Min-Heap como árbol binario completo"
+                    >
+                      <g class="tree-edges">
+                        @for (edge of heapLayout().edges; track edge.id) {
+                          <line
+                            [attr.x1]="edge.x1"
+                            [attr.y1]="edge.y1"
+                            [attr.x2]="edge.x2"
+                            [attr.y2]="edge.y2"
+                          />
+                        }
+                      </g>
+
+                      @for (item of heapLayout().nodes; track item.index) {
+                        <g
+                          class="tree-node"
+                          [attr.data-tone]="toneFor('' + item.index)"
+                          [attr.transform]="'translate(' + item.x + ',' + item.y + ')'"
+                        >
+                          <circle class="node-body" r="20" />
+                          <text class="node-value" text-anchor="middle" dominant-baseline="central">
+                            {{ item.value }}
+                          </text>
+                          <text class="heap-index" y="32" text-anchor="middle">
+                            [{{ item.index }}]
+                          </text>
+                        </g>
+                      }
+                    </svg>
+                  </div>
+
+                  <div class="border-t border-white/5 px-3 py-2">
+                    <div class="flex items-end gap-1.5 overflow-x-auto pb-1">
+                      @for (item of heapItems(); track item.index) {
+                        <div class="flex flex-col items-center gap-1">
+                          <span class="font-mono text-[9px] text-slate-500">{{ item.index }}</span>
+                          <div class="heap-cell" [attr.data-tone]="toneFor('' + item.index)">
+                            {{ item.value }}
+                          </div>
+                        </div>
+                      }
+                    </div>
+                    <p class="mt-1 text-[10px] uppercase tracking-[0.16em] text-slate-500">
+                      representación en arreglo
+                    </p>
+                  </div>
+                </div>
+              }
+
+              @case ('hash') {
+                <div class="flex h-full flex-col gap-3 px-4 py-4">
+                  <div class="flex flex-wrap items-center justify-between gap-2">
+                    <p class="font-mono text-[11px] text-slate-400">
+                      hash(clave) = clave % {{ hashSize }}
+                    </p>
+                    <span
+                      class="rounded-md bg-white/5 px-2 py-0.5 font-mono text-[10px] text-slate-500"
+                    >
+                      {{ hashSize }} buckets
+                    </span>
+                  </div>
+
+                  <div class="flex flex-1 flex-col justify-center gap-1.5 overflow-y-auto">
+                    @for (bucket of hashBuckets(); track bucket.index) {
+                      <div class="flex items-center gap-2">
+                        <div
+                          class="bucket-index"
+                          [attr.data-tone]="toneFor('bucket-' + bucket.index)"
+                        >
+                          {{ bucket.index }}
+                        </div>
+                        <span class="text-slate-600">→</span>
+                        <div class="flex min-w-0 flex-wrap items-center gap-1.5">
+                          @if (bucket.entries.length === 0) {
+                            <span class="bucket-empty">vacío</span>
+                          } @else {
+                            @for (entry of bucket.entries; track entry.id; let last = $last) {
+                              <div class="hash-entry" [attr.data-tone]="toneFor(entry.id)">
+                                <span class="hash-key">{{ entry.key }}</span>
+                                <span class="hash-sep">:</span>
+                                <span class="hash-value">{{ entry.value }}</span>
+                              </div>
+                              @if (!last) {
+                                <span class="text-slate-600">→</span>
+                              }
+                            }
+                          }
+                        </div>
+                      </div>
+                    }
+                  </div>
+                </div>
+              }
+
+              @case ('graph') {
+                <div class="flex h-full flex-col">
+                  <div class="min-h-0 flex-1 p-3">
+                    <svg
+                      class="h-full w-full"
+                      viewBox="0 0 650 360"
+                      preserveAspectRatio="xMidYMid meet"
+                      role="img"
+                      aria-label="Grafo ponderado no dirigido"
+                    >
+                      <g class="graph-edges">
+                        @for (edge of graphEdgeViews(); track edge.id) {
+                          <line
+                            class="graph-edge"
+                            [attr.data-tone]="toneFor(edge.id)"
+                            [attr.x1]="edge.x1"
+                            [attr.y1]="edge.y1"
+                            [attr.x2]="edge.x2"
+                            [attr.y2]="edge.y2"
+                          />
+                        }
+                      </g>
+
+                      @for (edge of graphEdgeViews(); track edge.id) {
+                        <text
+                          class="graph-weight"
+                          [attr.x]="edge.labelX"
+                          [attr.y]="edge.labelY"
+                          text-anchor="middle"
+                          dominant-baseline="central"
+                        >
+                          {{ edge.weight }}
+                        </text>
+                      }
+
+                      @for (node of graphView().nodes; track node.id) {
+                        <g
+                          class="tree-node"
+                          [attr.data-tone]="toneFor(node.id)"
+                          [attr.transform]="'translate(' + node.x + ',' + node.y + ')'"
+                        >
+                          <circle class="node-body" r="22" />
+                          <text class="node-value" text-anchor="middle" dominant-baseline="central">
+                            {{ node.label }}
+                          </text>
+                        </g>
+                      }
+                    </svg>
+                  </div>
+
+                  <div
+                    class="flex flex-wrap items-center gap-2 border-t border-white/5 px-3 py-2 text-[10px] text-slate-500"
+                  >
+                    <span class="font-mono text-slate-400">Nodo inicial: {{ startNode() }}</span>
+                    <span class="text-slate-600">·</span>
+                    <span>Las aristas se resaltan al explorarlas</span>
+                  </div>
+                </div>
+              }
+            }
+          }
+        </div>
+
+        <div class="flex min-h-[56px] items-center gap-2.5 border-t border-white/5 px-4 py-2.5">
+          <span class="h-1.5 w-1.5 shrink-0 rounded-full bg-sky-400/80"></span>
+          <p class="text-xs leading-relaxed text-slate-300">
+            {{ currentFrame()?.message ?? activeMeta().idle }}
+          </p>
+        </div>
+
+        <div
+          class="flex flex-wrap items-center gap-2 border-t border-white/5 bg-[#080d19]/70 px-3 py-2.5"
+        >
+          <button
+            type="button"
+            class="player-btn"
+            (click)="replay()"
+            [disabled]="frames().length === 0"
+            aria-label="Repetir operación"
+            title="Repetir"
+          >
+            <svg
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="1.8"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              aria-hidden="true"
+            >
+              <path d="M3.5 12a8.5 8.5 0 1 0 2.6-6.1" />
+              <path d="M3 4.5v4.2h4.2" />
+            </svg>
+          </button>
+
+          <button
+            type="button"
+            class="player-btn"
+            (click)="stepBack()"
+            [disabled]="!canBack()"
+            aria-label="Paso anterior"
+            title="Paso anterior"
+          >
+            <svg
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="1.9"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              aria-hidden="true"
+            >
+              <path d="M15 6l-6 6 6 6" />
+            </svg>
+          </button>
+
+          <button
+            type="button"
+            class="player-btn player-btn-primary"
+            (click)="togglePlay()"
+            [disabled]="frames().length <= 1"
+            [attr.aria-label]="playing() ? 'Pausar' : 'Reproducir'"
+            [title]="playing() ? 'Pausar' : 'Reproducir'"
+          >
+            @if (playing()) {
+              <svg
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2.4"
+                stroke-linecap="round"
+                aria-hidden="true"
+              >
+                <path d="M8 5v14M16 5v14" />
+              </svg>
+            } @else {
+              <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+                <path d="M8 5.5v13l10.5-6.5z" />
+              </svg>
+            }
+          </button>
+
+          <button
+            type="button"
+            class="player-btn"
+            (click)="stepForward()"
+            [disabled]="!canForward()"
+            aria-label="Paso siguiente"
+            title="Paso siguiente"
+          >
+            <svg
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="1.9"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              aria-hidden="true"
+            >
+              <path d="M9 6l6 6-6 6" />
+            </svg>
+          </button>
+
+          <div class="mx-1 h-1.5 min-w-[70px] flex-1 overflow-hidden rounded-full bg-white/10">
+            <div
+              class="h-full rounded-full bg-sky-400 transition-[width] duration-300"
+              [style.width.%]="progress()"
+            ></div>
+          </div>
+
+          <span class="min-w-[44px] text-center font-mono text-[11px] text-slate-400">{{
+            stepLabel()
+          }}</span>
+
+          <label
+            class="flex items-center gap-1.5 text-[10px] uppercase tracking-wider text-slate-500"
+          >
+            <span class="hidden sm:inline">Velocidad</span>
+            <select
+              class="speed-select"
+              (change)="setSpeed($event)"
+              aria-label="Velocidad de reproducción"
+            >
+              <option value="0.5">0.5×</option>
+              <option value="1" selected>1×</option>
+              <option value="1.5">1.5×</option>
+              <option value="2">2×</option>
+            </select>
+          </label>
+        </div>
+
+        <div class="border-t border-white/5 px-3 py-1.5 text-[10px] tracking-wide text-slate-600">
+          Espacio: play · ← →: paso · R: reiniciar · P: presentar
+        </div>
+      </div>
+
+      <aside class="flex flex-col gap-4">
+        <div
+          class="lesson-card rounded-2xl border border-white/10 bg-white/[0.03] p-4 shadow-2xl shadow-black/20"
+        >
+          <div class="flex items-center justify-between gap-2">
+            <h2 class="text-sm font-semibold text-white">Lección guiada</h2>
+            <select
+              class="lesson-select max-w-[160px]"
+              [value]="activeLessonId() ?? ''"
+              (change)="onLessonChange($event)"
+              aria-label="Lección guiada"
+            >
+              <option value="">Elegir…</option>
+              @for (lesson of lessons; track lesson.id) {
+                <option [value]="lesson.id">{{ lesson.title }}</option>
+              }
+            </select>
+          </div>
+
+          @if (currentLessonStep(); as step) {
+            <div class="mt-3 rounded-xl border border-sky-400/20 bg-sky-400/[0.06] p-3">
+              <div class="flex items-center justify-between gap-2">
+                <span class="text-[10px] font-semibold uppercase tracking-[0.14em] text-sky-300/80">
+                  Paso {{ lessonStep() + 1 }} / {{ lessonTotal() }}
+                </span>
+                <button
+                  type="button"
+                  class="text-[10px] text-slate-500 transition hover:text-slate-300"
+                  (click)="closeLesson()"
+                >
+                  Cerrar
+                </button>
+              </div>
+              <p class="mt-2 text-xs leading-relaxed text-slate-200">{{ step.text }}</p>
+              <div class="mt-3 flex gap-1.5">
+                <button
+                  type="button"
+                  class="op-btn flex-1 text-[11px]"
+                  (click)="prevLessonStep()"
+                  [disabled]="lessonStep() === 0"
+                >
+                  Anterior
+                </button>
+                <button
+                  type="button"
+                  class="op-btn flex-1 text-[11px]"
+                  (click)="nextLessonStep()"
+                  [disabled]="lessonStep() >= lessonTotal() - 1"
+                >
+                  Siguiente
+                </button>
+              </div>
+            </div>
+          } @else {
+            <p class="mt-2 text-xs leading-relaxed text-slate-500">
+              Elige una lección para guiar la clase paso a paso.
+            </p>
+          }
+        </div>
+
+        <div
+          class="rounded-2xl border border-white/10 bg-white/[0.03] p-4 shadow-2xl shadow-black/20"
+        >
+          <div class="flex items-center justify-between gap-2">
+            <h2 class="text-sm font-semibold text-white">Operaciones</h2>
+            <div class="flex items-center gap-1.5">
+              <button
+                type="button"
+                class="prediction-toggle"
+                [attr.data-active]="predictionEnabled()"
+                (click)="togglePrediction()"
+                title="Responder antes de ejecutar cada operación"
+              >
+                Predicción
+              </button>
+              <span class="rounded-md bg-white/5 px-2 py-0.5 font-mono text-[10px] text-slate-500">
+                {{ activeMeta().short }}
+              </span>
+            </div>
+          </div>
+
+          <div class="mt-3 grid grid-cols-2 gap-2">
+            @if (active() === 'graph') {
+              <label class="col-span-2 block">
+                <span class="field-label">Nodo inicial</span>
+                <select
+                  class="field-input"
+                  [disabled]="predictionLocked()"
+                  [value]="startNode()"
+                  (change)="onStartNodeChange($event)"
+                  aria-label="Nodo inicial"
+                >
+                  @for (node of graph.nodes; track node.id) {
+                    <option [value]="node.id">{{ node.label }}</option>
+                  }
+                </select>
+              </label>
+            } @else {
+              @if (active() === 'hash') {
+                <label class="col-span-2 block">
+                  <span class="field-label">Clave</span>
+                  <input
+                    class="field-input"
+                    [disabled]="predictionLocked()"
+                    type="number"
+                    inputmode="numeric"
+                    [value]="keyInput()"
+                    (input)="onKeyInput($event)"
+                    aria-label="Clave"
+                  />
+                </label>
+              }
+
+              <label class="col-span-2 block">
+                <span class="field-label">Valor</span>
+                <input
+                  class="field-input"
+                  [disabled]="predictionLocked()"
+                  type="number"
+                  inputmode="numeric"
+                  [value]="valueInput()"
+                  (input)="onValueInput($event)"
+                  aria-label="Valor"
+                />
+              </label>
+
+              @if (active() === 'list') {
+                <label class="col-span-2 block">
+                  <span class="field-label">Índice (base 0)</span>
+                  <input
+                    class="field-input"
+                    [disabled]="predictionLocked()"
+                    type="number"
+                    inputmode="numeric"
+                    [value]="indexInput()"
+                    (input)="onIndexInput($event)"
+                    aria-label="Índice"
+                  />
+                </label>
+              }
+            }
+          </div>
+
+          @if (formError()) {
+            <p class="mt-2 text-[11px] leading-snug text-rose-300">{{ formError() }}</p>
+          }
+
+          @if (pendingPrediction(); as prediction) {
+            <div class="prediction-card mt-3">
+              <div class="flex flex-wrap items-center justify-between gap-2">
+                <span class="prediction-label">Predicción · {{ prediction.label }}</span>
+                @if (prediction.revealed) {
+                  <span
+                    class="prediction-badge"
+                    [class.is-correct]="prediction.chosen === prediction.correctIndex"
+                    [class.is-wrong]="prediction.chosen !== prediction.correctIndex"
+                  >
+                    {{ prediction.chosen === prediction.correctIndex ? 'Correcto' : 'Incorrecto' }}
+                  </span>
+                }
+              </div>
+
+              <p class="mt-2 text-xs leading-relaxed text-slate-100">
+                {{ prediction.question }}
+              </p>
+
+              <div class="mt-2 grid gap-1.5">
+                @for (option of prediction.options; track option; let i = $index) {
+                  <button
+                    type="button"
+                    class="prediction-option"
+                    [class.is-correct]="prediction.revealed && i === prediction.correctIndex"
+                    [class.is-wrong]="
+                      prediction.revealed &&
+                      prediction.chosen === i &&
+                      i !== prediction.correctIndex
+                    "
+                    [disabled]="prediction.revealed"
+                    (click)="answerPrediction(i)"
+                  >
+                    {{ option }}
+                  </button>
+                }
+              </div>
+
+              @if (prediction.revealed) {
+                <p class="mt-2 text-[11px] leading-relaxed text-slate-400">
+                  {{ prediction.explanation }}
+                </p>
+                <button
+                  type="button"
+                  class="mt-2 text-[11px] font-medium text-sky-300 transition hover:text-sky-200"
+                  (click)="dismissPrediction()"
+                >
+                  Continuar
+                </button>
+              } @else {
+                <p class="mt-2 text-[10px] uppercase tracking-[0.14em] text-slate-500">
+                  Elige una opción para ejecutar
+                </p>
+              }
+            </div>
+          }
+
+          <div
+            class="mt-3 grid grid-cols-2 gap-2"
+            [class.pointer-events-none]="predictionLocked()"
+            [class.opacity-40]="predictionLocked()"
+          >
+            @switch (active()) {
+              @case ('stack') {
+                <button type="button" class="op-btn op-btn-primary col-span-2" (click)="doPush()">
+                  Push
+                </button>
+                <button type="button" class="op-btn" (click)="doPop()">Pop</button>
+                <button type="button" class="op-btn" (click)="doPeekStack()">Peek</button>
+                <button type="button" class="op-btn col-span-2" (click)="doClearStack()">
+                  Vaciar pila
+                </button>
+              }
+
+              @case ('queue') {
+                <button
+                  type="button"
+                  class="op-btn op-btn-primary col-span-2"
+                  (click)="doEnqueue()"
+                >
+                  Encolar
+                </button>
+                <button type="button" class="op-btn" (click)="doDequeue()">Desencolar</button>
+                <button type="button" class="op-btn" (click)="doPeekQueue()">Ver frente</button>
+                <button type="button" class="op-btn col-span-2" (click)="doClearQueue()">
+                  Vaciar cola
+                </button>
+              }
+
+              @case ('list') {
+                <button type="button" class="op-btn op-btn-primary" (click)="doInsertHead()">
+                  Insertar cabeza
+                </button>
+                <button type="button" class="op-btn" (click)="doInsertTail()">Insertar cola</button>
+                <button type="button" class="op-btn" (click)="doInsertAt()">
+                  Insertar en índice
+                </button>
+                <button type="button" class="op-btn" (click)="doRemoveAt()">Eliminar índice</button>
+                <button type="button" class="op-btn" (click)="doSearchList()">Buscar valor</button>
+                <button type="button" class="op-btn" (click)="doClearList()">Vaciar lista</button>
+              }
+
+              @case ('bst') {
+                <button type="button" class="op-btn op-btn-primary" (click)="doInsertTree()">
+                  Insertar
+                </button>
+                <button type="button" class="op-btn" (click)="doSearchTree()">Buscar</button>
+                <button type="button" class="op-btn" (click)="doRemoveTree()">Eliminar</button>
+                <button type="button" class="op-btn" (click)="doClearTree()">Vaciar árbol</button>
+              }
+
+              @case ('avl') {
+                <button type="button" class="op-btn op-btn-primary" (click)="doInsertAvl()">
+                  Insertar
+                </button>
+                <button type="button" class="op-btn" (click)="doSearchAvl()">Buscar</button>
+                <button type="button" class="op-btn" (click)="doRemoveAvl()">Eliminar</button>
+                <button type="button" class="op-btn" (click)="doClearAvl()">Vaciar árbol</button>
+              }
+
+              @case ('heap') {
+                <button
+                  type="button"
+                  class="op-btn op-btn-primary col-span-2"
+                  (click)="doInsertHeap()"
+                >
+                  Insertar
+                </button>
+                <button type="button" class="op-btn" (click)="doExtractMin()">
+                  Extraer mínimo
+                </button>
+                <button type="button" class="op-btn" (click)="doPeekHeap()">Ver mínimo</button>
+                <button type="button" class="op-btn col-span-2" (click)="doClearHeap()">
+                  Vaciar heap
+                </button>
+              }
+
+              @case ('hash') {
+                <button
+                  type="button"
+                  class="op-btn op-btn-primary col-span-2"
+                  (click)="doHashSet()"
+                >
+                  Insertar / actualizar
+                </button>
+                <button type="button" class="op-btn" (click)="doHashGet()">Buscar clave</button>
+                <button type="button" class="op-btn" (click)="doHashRemove()">
+                  Eliminar clave
+                </button>
+                <button type="button" class="op-btn col-span-2" (click)="doHashClear()">
+                  Vaciar tabla
+                </button>
+              }
+
+              @case ('graph') {
+                <button type="button" class="op-btn op-btn-primary col-span-2" (click)="doBfs()">
+                  BFS · anchura
+                </button>
+                <button type="button" class="op-btn" (click)="doDfs()">DFS · profundidad</button>
+                <button type="button" class="op-btn" (click)="doDijkstra()">Dijkstra</button>
+              }
+            }
+          </div>
+
+          @if (active() === 'bst' || active() === 'avl') {
+            <div class="mt-3 border-t border-white/5 pt-3">
+              <p class="field-label">Recorridos</p>
+              <div
+                class="mt-1.5 grid grid-cols-3 gap-1.5"
+                [class.pointer-events-none]="predictionLocked()"
+                [class.opacity-40]="predictionLocked()"
+              >
+                <button
+                  type="button"
+                  class="op-btn px-1 text-[11px]"
+                  (click)="doTraverseActive('inorder')"
+                >
+                  Inorden
+                </button>
+                <button
+                  type="button"
+                  class="op-btn px-1 text-[11px]"
+                  (click)="doTraverseActive('preorder')"
+                >
+                  Preorden
+                </button>
+                <button
+                  type="button"
+                  class="op-btn px-1 text-[11px]"
+                  (click)="doTraverseActive('postorder')"
+                >
+                  Postorden
+                </button>
+              </div>
+            </div>
+          }
+
+          <div class="mt-4 border-t border-white/5 pt-3">
+            <p class="field-label">Complejidad</p>
+            <dl class="mt-2 space-y-1.5">
+              @for (item of activeMeta().complexities; track item.label) {
+                <div class="flex items-center justify-between gap-2 text-[11px]">
+                  <dt class="font-mono text-slate-400">{{ item.label }}</dt>
+                  <dd class="rounded bg-white/5 px-1.5 py-0.5 font-mono text-sky-300">
+                    {{ item.value }}
+                  </dd>
+                </div>
+              }
+            </dl>
+          </div>
+        </div>
+
+        <div
+          class="rounded-2xl border border-white/10 bg-white/[0.03] p-4 shadow-2xl shadow-black/20"
+        >
+          <div class="flex flex-wrap items-center justify-between gap-2">
+            <h2 class="text-sm font-semibold text-white">Pseudocódigo</h2>
+            @if (code(); as code) {
+              <span
+                class="rounded-md border border-sky-400/20 bg-sky-400/10 px-2 py-0.5 font-mono text-[10px] text-sky-200"
+              >
+                {{ code.title }}
+              </span>
+            }
+          </div>
+
+          @if (code(); as code) {
+            <div class="code-block mt-3">
+              @for (line of code.lines; track $index) {
+                <div class="code-line" [class.code-line-active]="$index === code.line">
+                  <span class="code-number">{{ $index + 1 }}</span>
+                  <code class="code-text">{{ line }}</code>
+                </div>
+              }
+            </div>
+          } @else {
+            <div class="mt-3 rounded-xl border border-dashed border-white/10 px-3 py-7 text-center">
+              <p class="text-xs text-slate-400">
+                Ejecuta una operación para seguir el pseudocódigo.
+              </p>
+              <p class="mt-1 font-mono text-[10px] text-slate-600">{{ activeMeta().label }}</p>
+            </div>
+          }
+        </div>
+      </aside>
+    </section>
+
+    <section
+      class="history-card rounded-2xl border border-white/10 bg-white/[0.03] p-4 shadow-2xl shadow-black/20"
+    >
+      <div class="flex flex-wrap items-center justify-between gap-2">
+        <div class="flex items-center gap-2">
+          <h2 class="text-sm font-semibold text-white">Historial</h2>
+          <span class="rounded-md bg-white/5 px-2 py-0.5 font-mono text-[10px] text-slate-400">
+            {{ log().length }}
+          </span>
+        </div>
+
+        @if (log().length > 0) {
+          <button
+            type="button"
+            class="text-[11px] text-slate-500 transition hover:text-slate-300"
+            (click)="clearLog()"
+          >
+            Limpiar
+          </button>
+        }
+      </div>
+
+      @if (log().length === 0) {
+        <p class="mt-3 text-xs text-slate-500">
+          Aún no hay operaciones. Ejecuta una para empezar a construir el historial.
+        </p>
+      } @else {
+        <ul class="mt-3 divide-y divide-white/5">
+          @for (entry of log(); track entry.id) {
+            <li class="flex flex-wrap items-center gap-2 py-2 text-xs">
+              <span
+                class="rounded-md border border-white/10 bg-white/5 px-1.5 py-0.5 text-[10px] text-slate-400"
+              >
+                {{ structureLabel(entry.structure) }}
+              </span>
+              <span class="font-mono text-[11px] text-sky-200">{{ entry.label }}</span>
+              <span class="text-slate-500">{{ entry.message }}</span>
+              @if (entry.steps > 0) {
+                <span
+                  class="ml-auto rounded bg-white/5 px-1.5 py-0.5 font-mono text-[10px] text-slate-500"
+                >
+                  {{ entry.steps }} pasos
+                </span>
+              }
+            </li>
+          }
+        </ul>
+      }
+    </section>
+  </div>
+
+  @if (toast(); as message) {
+    <div class="toast" role="status">{{ message }}</div>
+  }
+</div>

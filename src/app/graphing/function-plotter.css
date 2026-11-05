@@ -1,0 +1,156 @@
+:host {
+  display: block;
+}
+
+.plot-surface {
+  background:
+    radial-gradient(ellipse at 50% 38%, rgba(29, 78, 216, 0.16) 0%, transparent 62%),
+    radial-gradient(ellipse at 85% 90%, rgba(217, 70, 239, 0.08) 0%, transparent 55%), #080d19;
+}
+
+.fn-card {
+  border-color: rgb(255 255 255 / 0.09);
+  background: rgb(255 255 255 / 0.03);
+}
+
+.fn-card.is-error {
+  border-color: rgb(251 113 133 / 0.4);
+  background: rgb(244 63 94 / 0.06);
+}
+
+input.is-error {
+  border-color: rgb(251 113 133 / 0.45);
+  color: rgb(254 205 211);
+}
+
+input.is-error:focus {
+  border-color: rgb(251 113 133 / 0.7);
+  box-shadow: 0 0 0 3px rgb(244 63 94 / 0.14);
+}
+
+.icon-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 30px;
+  height: 30px;
+  border: 1px solid rgb(255 255 255 / 0.09);
+  border-radius: 9px;
+  background: rgb(255 255 255 / 0.03);
+  color: rgb(148 163 184);
+  transition:
+    color 150ms ease,
+    background-color 150ms ease,
+    border-color 150ms ease;
+}
+
+.icon-btn svg {
+  width: 16px;
+  height: 16px;
+}
+
+.icon-btn:hover {
+  border-color: rgb(56 189 248 / 0.45);
+  background: rgb(14 165 233 / 0.1);
+  color: rgb(125 211 252);
+}
+
+.icon-btn:focus-visible {
+  outline: 2px solid rgb(56 189 248 / 0.7);
+  outline-offset: 2px;
+}
+
+.icon-btn-danger:hover {
+  border-color: rgb(251 113 133 / 0.5);
+  background: rgb(244 63 94 / 0.1);
+  color: rgb(253 164 175);
+}
+
+.canvas-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  border: 1px solid rgb(255 255 255 / 0.1);
+  border-radius: 10px;
+  background: rgb(11 18 36 / 0.85);
+  color: rgb(203 213 225);
+  backdrop-filter: blur(8px);
+  box-shadow: 0 8px 20px rgb(0 0 0 / 0.25);
+  transition:
+    color 150ms ease,
+    background-color 150ms ease,
+    border-color 150ms ease,
+    transform 100ms ease;
+}
+
+.canvas-btn:hover {
+  border-color: rgb(56 189 248 / 0.5);
+  background: rgb(14 165 233 / 0.14);
+  color: rgb(125 211 252);
+}
+
+.canvas-btn:active {
+  transform: scale(0.95);
+}
+
+.canvas-btn:focus-visible {
+  outline: 2px solid rgb(56 189 248 / 0.7);
+  outline-offset: 2px;
+}
+
+.color-swatch {
+  appearance: none;
+  -webkit-appearance: none;
+  width: 26px;
+  height: 26px;
+  padding: 0;
+  border: 1px solid rgb(255 255 255 / 0.18);
+  border-radius: 8px;
+  background: transparent;
+  cursor: pointer;
+}
+
+.color-swatch::-webkit-color-swatch-wrapper {
+  padding: 2px;
+}
+
+.color-swatch::-webkit-color-swatch {
+  border: none;
+  border-radius: 5px;
+}
+
+.color-swatch::-moz-color-swatch {
+  border: none;
+  border-radius: 5px;
+}
+
+.color-swatch:focus-visible {
+  outline: 2px solid rgb(56 189 248 / 0.7);
+  outline-offset: 2px;
+}
+
+.fn-list {
+  scrollbar-width: thin;
+  scrollbar-color: rgb(148 163 184 / 0.3) transparent;
+  overscroll-behavior: contain;
+}
+
+.fn-list::-webkit-scrollbar {
+  width: 6px;
+}
+
+.fn-list::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.fn-list::-webkit-scrollbar-thumb {
+  border-radius: 999px;
+  background: rgb(148 163 184 / 0.3);
+}
+
+.fn-list::-webkit-scrollbar-thumb:hover {
+  background: rgb(148 163 184 / 0.5);
+}

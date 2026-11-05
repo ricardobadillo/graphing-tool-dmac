@@ -1,0 +1,13 @@
+/* You can add global styles to this file, and also import other style files */
+
+@import 'tailwindcss';
+
+html {
+  color-scheme: dark;
+  background-color: #070b16;
+}
+
+body {
+  min-height: 100dvh;
+  background-color: #070b16;
+}

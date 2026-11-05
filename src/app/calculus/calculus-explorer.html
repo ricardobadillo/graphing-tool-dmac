@@ -1,0 +1,816 @@
+<div class="relative min-h-[calc(100dvh-3.5rem)] overflow-hidden bg-[#070b16] text-slate-100">
+  <div class="pointer-events-none absolute inset-0 overflow-hidden">
+    <div
+      class="absolute -top-48 left-1/3 h-[520px] w-[820px] -translate-x-1/2 rounded-full bg-violet-500/10 blur-[130px]"
+    ></div>
+    <div
+      class="absolute -bottom-40 right-0 h-[420px] w-[520px] rounded-full bg-emerald-500/10 blur-[130px]"
+    ></div>
+  </div>
+
+  <div class="relative z-10 mx-auto flex w-full max-w-7xl flex-col gap-5 px-4 py-6 sm:px-6 lg:py-8">
+    <header class="flex flex-wrap items-end justify-between gap-4">
+      <div>
+        <div
+          class="mb-3 inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.2em] text-violet-300/90"
+        >
+          <span
+            class="h-1.5 w-1.5 rounded-full bg-violet-400 shadow-[0_0_10px_2px_rgba(167,139,250,0.8)]"
+          ></span>
+          Cálculo visual
+        </div>
+
+        <h1 class="text-3xl font-semibold tracking-tight text-white sm:text-4xl">
+          Derivadas, áreas y curvas
+        </h1>
+        <p class="mt-2 max-w-2xl text-sm leading-relaxed text-slate-400">
+          Explora la tangente y la secante, aproxima integrales con sumas de Riemann y dibuja curvas
+          polares y paramétricas.
+        </p>
+      </div>
+
+      <div class="flex flex-wrap items-center gap-2 text-[11px] text-slate-400">
+        <span class="rounded-lg border border-white/10 bg-white/5 px-2.5 py-1.5 font-mono"
+          >Tangente y secante</span
+        >
+        <span class="rounded-lg border border-white/10 bg-white/5 px-2.5 py-1.5 font-mono"
+          >Riemann</span
+        >
+        <span class="rounded-lg border border-white/10 bg-white/5 px-2.5 py-1.5 font-mono"
+          >Polares y paramétricas</span
+        >
+      </div>
+    </header>
+
+    <div class="flex flex-wrap items-center justify-between gap-3">
+      <div class="inline-flex flex-wrap rounded-xl border border-white/10 bg-white/[0.03] p-1">
+        <button
+          type="button"
+          class="mode-tab"
+          [attr.data-active]="mode() === 'derivative'"
+          (click)="setMode('derivative')"
+        >
+          Derivada
+        </button>
+        <button
+          type="button"
+          class="mode-tab"
+          [attr.data-active]="mode() === 'riemann'"
+          (click)="setMode('riemann')"
+        >
+          Riemann
+        </button>
+        <button
+          type="button"
+          class="mode-tab"
+          [attr.data-active]="mode() === 'polar'"
+          (click)="setMode('polar')"
+        >
+          Polares
+        </button>
+        <button
+          type="button"
+          class="mode-tab"
+          [attr.data-active]="mode() === 'parametric'"
+          (click)="setMode('parametric')"
+        >
+          Paramétricas
+        </button>
+      </div>
+
+      <p class="font-mono text-[10px] text-slate-500">
+        Arrastra para mover · rueda para zoom · en derivada, clic fija x₀
+      </p>
+    </div>
+
+    <div class="rounded-2xl border border-white/10 bg-white/[0.03] p-4 shadow-2xl shadow-black/20">
+      @if (mode() === 'polar') {
+        <div class="flex flex-wrap items-center gap-2">
+          <span class="shrink-0 font-mono text-sm text-slate-400">r(θ) =</span>
+          <input
+            class="min-w-0 flex-1 rounded-lg border border-white/10 bg-[#080d19] px-2.5 py-2 font-mono text-sm text-slate-100 outline-none transition placeholder:text-slate-600 focus:border-violet-400/60 focus:ring-2 focus:ring-violet-400/20"
+            type="text"
+            [value]="polarExpression()"
+            (input)="onPolarExpressionInput($event)"
+            placeholder="1 + cos(theta)"
+            spellcheck="false"
+            autocomplete="off"
+            autocapitalize="off"
+            aria-label="Función polar r de theta"
+          />
+          <button type="button" class="mini-btn" (click)="fitView()">Ajustar vista</button>
+        </div>
+        @if (curveError()) {
+          <p class="mt-2 text-[11px] text-rose-300">{{ curveError() }}</p>
+        } @else {
+          <p class="mt-2 text-[10px] leading-relaxed text-slate-500">
+            Usa <span class="font-mono">theta</span> o <span class="font-mono">θ</span>. El ángulo
+            se interpreta en radianes; r puede ser negativo.
+          </p>
+        }
+      } @else if (mode() === 'parametric') {
+        <div class="grid gap-2 sm:grid-cols-2">
+          <label class="flex min-w-0 items-center gap-2">
+            <span class="shrink-0 font-mono text-sm text-slate-400">x(t) =</span>
+            <input
+              class="min-w-0 flex-1 rounded-lg border border-white/10 bg-[#080d19] px-2.5 py-2 font-mono text-sm text-slate-100 outline-none transition placeholder:text-slate-600 focus:border-violet-400/60 focus:ring-2 focus:ring-violet-400/20"
+              type="text"
+              [value]="paramXExpression()"
+              (input)="onParamXInput($event)"
+              placeholder="3 * cos(t)"
+              spellcheck="false"
+              autocomplete="off"
+              autocapitalize="off"
+              aria-label="Componente x de la curva paramétrica"
+            />
+          </label>
+          <label class="flex min-w-0 items-center gap-2">
+            <span class="shrink-0 font-mono text-sm text-slate-400">y(t) =</span>
+            <input
+              class="min-w-0 flex-1 rounded-lg border border-white/10 bg-[#080d19] px-2.5 py-2 font-mono text-sm text-slate-100 outline-none transition placeholder:text-slate-600 focus:border-violet-400/60 focus:ring-2 focus:ring-violet-400/20"
+              type="text"
+              [value]="paramYExpression()"
+              (input)="onParamYInput($event)"
+              placeholder="2 * sin(2 * t)"
+              spellcheck="false"
+              autocomplete="off"
+              autocapitalize="off"
+              aria-label="Componente y de la curva paramétrica"
+            />
+          </label>
+        </div>
+        <div class="mt-2 flex flex-wrap items-center justify-between gap-2">
+          <p class="text-[10px] leading-relaxed text-slate-500">
+            La curva se dibuja para t en el intervalo. No tiene que ser una función y = f(x).
+          </p>
+          <button type="button" class="mini-btn" (click)="fitView()">Ajustar vista</button>
+        </div>
+        @if (curveError()) {
+          <p class="mt-2 text-[11px] text-rose-300">{{ curveError() }}</p>
+        }
+      } @else {
+        <div class="flex flex-wrap items-center gap-2">
+          <span class="shrink-0 font-mono text-sm text-slate-400">f(x) =</span>
+          <input
+            class="min-w-0 flex-1 rounded-lg border border-white/10 bg-[#080d19] px-2.5 py-2 font-mono text-sm text-slate-100 outline-none transition placeholder:text-slate-600 focus:border-violet-400/60 focus:ring-2 focus:ring-violet-400/20"
+            type="text"
+            [value]="expression()"
+            (input)="onExpressionInput($event)"
+            placeholder="x^2 / 4"
+            spellcheck="false"
+            autocomplete="off"
+            autocapitalize="off"
+            aria-label="Función de x"
+          />
+          <button type="button" class="mini-btn" (click)="fitView()">Ajustar vista</button>
+        </div>
+
+        @if (curveError()) {
+          <p class="mt-2 text-[11px] text-rose-300">{{ curveError() }}</p>
+        } @else {
+          <p class="mt-2 text-[10px] leading-relaxed text-slate-500">
+            Acepta sin, cos, tan, ln, log base 10, sqrt, abs, e^x, etc. La derivada de la recta
+            tangente se calcula numéricamente para respetar todas las funciones del graficador.
+          </p>
+        }
+      }
+    </div>
+
+    <section class="grid gap-4 lg:grid-cols-[minmax(0,1fr)_360px]">
+      <div
+        class="flex flex-col overflow-hidden rounded-2xl border border-white/10 bg-white/[0.03] shadow-2xl shadow-black/25"
+      >
+        <div
+          class="flex flex-wrap items-start justify-between gap-3 border-b border-white/5 px-4 py-3.5"
+        >
+          <div class="min-w-0">
+            <h2 class="flex items-center gap-2 text-sm font-semibold text-white">
+              @if (mode() === 'derivative') {
+                Derivada en un punto
+                <span
+                  class="rounded-full border border-emerald-400/20 bg-emerald-400/10 px-2 py-0.5 text-[10px] font-medium text-emerald-200"
+                >
+                  x₀ = {{ format(x0(), 2) }}
+                </span>
+              } @else if (mode() === 'riemann') {
+                Suma de Riemann
+                <span
+                  class="rounded-full border border-emerald-400/20 bg-emerald-400/10 px-2 py-0.5 text-[10px] font-medium text-emerald-200"
+                >
+                  n = {{ n() }}
+                </span>
+              } @else if (mode() === 'polar') {
+                Curva polar
+                <span
+                  class="rounded-full border border-sky-400/20 bg-sky-400/10 px-2 py-0.5 text-[10px] font-medium text-sky-200"
+                >
+                  θ ∈ [{{ format(thetaMin(), 2) }}, {{ format(thetaMax(), 2) }}]
+                </span>
+              } @else {
+                Curva paramétrica
+                <span
+                  class="rounded-full border border-sky-400/20 bg-sky-400/10 px-2 py-0.5 text-[10px] font-medium text-sky-200"
+                >
+                  t ∈ [{{ format(tMin(), 2) }}, {{ format(tMax(), 2) }}]
+                </span>
+              }
+            </h2>
+            <p class="mt-0.5 text-xs text-slate-400">
+              @if (mode() === 'derivative') {
+                La tangente es el límite de la secante cuando h → 0.
+              } @else if (mode() === 'riemann') {
+                {{ methodInfo().label }} · {{ methodInfo().formula }}
+              } @else if (mode() === 'polar') {
+                x = r(θ) · cos θ · y = r(θ) · sin θ
+              } @else {
+                Cada t produce un punto (x(t), y(t))
+              }
+            </p>
+          </div>
+
+          <div class="flex flex-wrap gap-1.5">
+            @if (mode() === 'derivative') {
+              <span class="stat-chip"
+                >f(x₀) = <b>{{ format(fValue()) }}</b></span
+              >
+              <span class="stat-chip"
+                >m = <b>{{ format(slope()) }}</b></span
+              >
+            } @else if (mode() === 'riemann') {
+              @if (riemannResult(); as result) {
+                <span class="stat-chip"
+                  >Δx = <b>{{ format(result.delta, 3) }}</b></span
+                >
+                <span class="stat-chip"
+                  >suma = <b>{{ format(result.sum) }}</b></span
+                >
+              }
+            } @else if (mode() === 'polar') {
+              <span class="stat-chip"
+                >r(θ) = <b>{{ polar().normalized || '—' }}</b></span
+              >
+            } @else {
+              <span class="stat-chip"
+                >x(t) = <b>{{ paramX().normalized || '—' }}</b></span
+              >
+            }
+          </div>
+        </div>
+
+        <div class="calc-stage relative h-[380px] overflow-hidden sm:h-[460px]">
+          <canvas
+            #canvas
+            class="absolute inset-0 h-full w-full touch-none"
+            [style.cursor]="dragging() ? 'grabbing' : 'crosshair'"
+            (pointerdown)="onPointerDown($event)"
+            (pointermove)="onPointerMove($event)"
+            (pointerup)="onPointerUp($event)"
+            (pointercancel)="onPointerUp($event)"
+            (pointerleave)="onPointerLeave()"
+            aria-label="Gráfico de la función con la visualización de cálculo"
+          ></canvas>
+
+          <div class="absolute bottom-3 right-3 z-10 flex flex-col gap-1.5">
+            <button
+              type="button"
+              class="canvas-btn"
+              (click)="zoomBy(1.4)"
+              aria-label="Acercar"
+              title="Acercar"
+            >
+              <svg
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                aria-hidden="true"
+              >
+                <path d="M12 5v14M5 12h14" />
+              </svg>
+            </button>
+            <button
+              type="button"
+              class="canvas-btn"
+              (click)="zoomBy(1 / 1.4)"
+              aria-label="Alejar"
+              title="Alejar"
+            >
+              <svg
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                aria-hidden="true"
+              >
+                <path d="M5 12h14" />
+              </svg>
+            </button>
+            <button
+              type="button"
+              class="canvas-btn"
+              (click)="fitView()"
+              aria-label="Ajustar vista"
+              title="Ajustar vista"
+            >
+              <svg
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="1.8"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                aria-hidden="true"
+              >
+                <path d="M3.5 12a8.5 8.5 0 1 0 2.6-6.1" />
+                <path d="M3 4.5v4.2h4.2" />
+              </svg>
+            </button>
+          </div>
+
+          <div
+            class="pointer-events-none absolute bottom-3 left-3 z-10 hidden rounded-lg border border-white/10 bg-[#0b1224]/80 px-2.5 py-1 font-mono text-[10px] text-slate-400 backdrop-blur sm:block"
+          >
+            {{ rangeLabel() }}
+          </div>
+
+          <div
+            class="pointer-events-none absolute left-3 top-3 z-10 rounded-lg border border-white/10 bg-[#0b1224]/80 px-2.5 py-1 text-[10px] text-slate-400 backdrop-blur"
+          >
+            @if (mode() === 'derivative') {
+              Haz clic para mover x₀
+            } @else if (mode() === 'riemann') {
+              Zonas verdes suman, zonas rojas restan
+            } @else if (mode() === 'polar') {
+              θ recorre el intervalo · r puede ser negativo
+            } @else {
+              t recorre el intervalo
+            }
+          </div>
+        </div>
+
+        <div class="flex min-h-[56px] items-center gap-2.5 border-t border-white/5 px-4 py-2.5">
+          <span class="h-1.5 w-1.5 shrink-0 rounded-full bg-violet-400/80"></span>
+          <p class="text-xs leading-relaxed text-slate-300">
+            @if (mode() === 'derivative') {
+              La pendiente de la secante es
+              <span class="font-mono text-amber-300">{{ format(secantSlope()) }}</span>
+              con h = {{ format(h(), 2) }}. Al reducir h, se acerca a la pendiente tangente
+              {{ format(slope()) }}.
+            } @else if (mode() === 'riemann') {
+              @if (riemannResult(); as result) {
+                Suma {{ methodInfo().label.toLowerCase() }} =
+                <span class="font-mono text-emerald-300">{{ format(result.sum) }}</span
+                >, referencia ≈
+                <span class="font-mono text-sky-300">{{ format(result.reference) }}</span
+                >, error = <span class="font-mono text-rose-300">{{ format(result.error) }}</span
+                >.
+              } @else {
+                Escribe una función válida para comenzar.
+              }
+            } @else if (mode() === 'polar') {
+              @if (!polarRangeValid()) {
+                El ángulo máximo debe ser mayor que el ángulo mínimo.
+              } @else {
+                Cada punto es (r(θ)·cos θ, r(θ)·sin θ). Un r negativo apunta en la dirección
+                opuesta.
+              }
+            } @else {
+              @if (!parametricRangeValid()) {
+                El valor máximo de t debe ser mayor que el mínimo.
+              } @else {
+                La curva es el conjunto de puntos (x(t), y(t)) para t en el intervalo. No tiene que
+                ser una función y = f(x).
+              }
+            }
+          </p>
+        </div>
+
+        <div
+          class="flex flex-wrap items-center gap-3 border-t border-white/5 px-4 py-2 text-[10px] text-slate-500"
+        >
+          @if (mode() === 'derivative') {
+            <span class="legend-dot bg-sky-400"></span> f(x)
+            <span class="legend-dot bg-emerald-400"></span> tangente
+            <span class="legend-dot bg-amber-400"></span> secante
+            <span class="legend-dot bg-violet-400"></span> f'(x)
+          } @else if (mode() === 'riemann') {
+            <span class="legend-dot bg-emerald-400"></span> área positiva
+            <span class="legend-dot bg-rose-400"></span> área negativa
+            <span class="ml-auto font-mono">Δx = (b − a) / n</span>
+          } @else if (mode() === 'polar') {
+            <span class="legend-dot bg-sky-400"></span> trayectoria polar
+            <span class="ml-auto font-mono">r = r(θ)</span>
+          } @else {
+            <span class="legend-dot bg-sky-400"></span> trayectoria paramétrica
+            <span class="ml-auto font-mono">(x(t), y(t))</span>
+          }
+        </div>
+      </div>
+
+      <aside class="flex flex-col gap-4">
+        @if (mode() === 'derivative') {
+          <div
+            class="rounded-2xl border border-white/10 bg-white/[0.03] p-4 shadow-2xl shadow-black/20"
+          >
+            <h2 class="text-sm font-semibold text-white">Punto y pendiente</h2>
+
+            <div class="mt-3 flex items-center justify-between">
+              <span class="field-label !mb-0">x₀</span>
+              <span class="font-mono text-xs text-emerald-300">{{ format(x0(), 2) }}</span>
+            </div>
+            <input
+              class="range-input mt-2 w-full"
+              type="range"
+              [min]="x0Range().min"
+              [max]="x0Range().max"
+              step="0.05"
+              [value]="x0()"
+              (input)="onX0Input($event)"
+              aria-label="Punto x cero"
+            />
+
+            <div class="mt-3 flex items-center justify-between">
+              <span class="field-label !mb-0">h (secante)</span>
+              <span class="font-mono text-xs text-amber-300">{{ format(h(), 2) }}</span>
+            </div>
+            <input
+              class="range-input mt-2 w-full"
+              type="range"
+              min="0.01"
+              max="3"
+              step="0.01"
+              [value]="h()"
+              (input)="onHInput($event)"
+              aria-label="Distancia h de la secante"
+            />
+
+            <div class="mt-3 flex flex-wrap gap-1.5">
+              <button
+                type="button"
+                class="mini-btn"
+                [attr.data-active]="showTangent()"
+                (click)="toggleTangent()"
+              >
+                Tangente
+              </button>
+              <button
+                type="button"
+                class="mini-btn"
+                [attr.data-active]="showSecant()"
+                (click)="toggleSecant()"
+              >
+                Secante
+              </button>
+              <button
+                type="button"
+                class="mini-btn"
+                [attr.data-active]="showDerivativeCurve()"
+                (click)="toggleDerivativeCurve()"
+              >
+                f'(x)
+              </button>
+              <button type="button" class="op-btn px-2 py-1 text-[10px]" (click)="approachH()">
+                h → 0
+              </button>
+            </div>
+
+            <dl class="mt-4 space-y-1.5 border-t border-white/5 pt-3 text-[11px]">
+              <div class="flex justify-between gap-2">
+                <dt class="text-slate-400">f(x₀)</dt>
+                <dd class="font-mono text-slate-200">{{ format(fValue()) }}</dd>
+              </div>
+              <div class="flex justify-between gap-2">
+                <dt class="text-slate-400">f'(x₀) numérica</dt>
+                <dd class="font-mono text-emerald-300">{{ format(slope()) }}</dd>
+              </div>
+              <div class="flex justify-between gap-2">
+                <dt class="text-slate-400">pendiente secante</dt>
+                <dd class="font-mono text-amber-300">{{ format(secantSlope()) }}</dd>
+              </div>
+            </dl>
+
+            <div class="mt-3 rounded-xl border border-white/10 bg-[#080d19] px-3 py-2">
+              <p class="field-label !mb-1">Recta tangente</p>
+              <p class="font-mono text-[11px] text-emerald-200">{{ tangentEquation() }}</p>
+            </div>
+
+            <div class="mt-3 rounded-xl border border-white/10 bg-[#080d19] px-3 py-2">
+              <p class="field-label !mb-1">Derivada simbólica</p>
+              @if (calculus().symbolicDerivative; as derivative) {
+                <p class="font-mono text-[11px] text-violet-200">f'(x) = {{ derivative }}</p>
+              } @else {
+                <p class="text-[11px] leading-relaxed text-slate-500">
+                  Se usa derivada numérica para esta expresión.
+                </p>
+              }
+            </div>
+          </div>
+
+          <div
+            class="rounded-2xl border border-white/10 bg-white/[0.03] p-4 shadow-2xl shadow-black/20"
+          >
+            <h2 class="text-sm font-semibold text-white">Lectura</h2>
+            <p class="mt-2 text-xs leading-relaxed text-slate-400">
+              La secante pasa por (x₀, f(x₀)) y (x₀+h, f(x₀+h)). Su pendiente es el cociente
+              incremental. Cuando h se hace muy pequeño, la secante se confunde con la tangente.
+            </p>
+            <p
+              class="mt-2 rounded-lg border border-white/10 bg-white/[0.03] px-2.5 py-2 font-mono text-[10px] text-slate-400"
+            >
+              m = [f(x₀+h) − f(x₀)] / h
+            </p>
+          </div>
+        } @else if (mode() === 'riemann') {
+          <div
+            class="rounded-2xl border border-white/10 bg-white/[0.03] p-4 shadow-2xl shadow-black/20"
+          >
+            <h2 class="text-sm font-semibold text-white">Intervalo y partición</h2>
+
+            <div class="mt-3 grid grid-cols-2 gap-2">
+              <label class="block">
+                <span class="field-label">a</span>
+                <input
+                  class="field-input"
+                  type="number"
+                  [value]="a()"
+                  (input)="onAInput($event)"
+                  aria-label="Extremo a"
+                />
+              </label>
+              <label class="block">
+                <span class="field-label">b</span>
+                <input
+                  class="field-input"
+                  type="number"
+                  [value]="b()"
+                  (input)="onBInput($event)"
+                  aria-label="Extremo b"
+                />
+              </label>
+            </div>
+
+            @if (intervalReversed()) {
+              <p class="mt-2 text-[10px] leading-relaxed text-amber-300">
+                Se usará el intervalo ordenado [{{ format(b(), 3) }}, {{ format(a(), 3) }}].
+              </p>
+            }
+
+            <div class="mt-3 flex items-center justify-between">
+              <span class="field-label !mb-0">n (subintervalos)</span>
+              <span class="font-mono text-xs text-emerald-300">{{ n() }}</span>
+            </div>
+            <input
+              class="range-input mt-2 w-full"
+              type="range"
+              min="1"
+              max="200"
+              step="1"
+              [value]="n()"
+              (input)="onNInput($event)"
+              aria-label="Número de subintervalos"
+            />
+
+            <p class="field-label mt-4">Método</p>
+            <div class="grid grid-cols-2 gap-1.5">
+              @for (item of methods; track item.key) {
+                <button
+                  type="button"
+                  class="dist-chip"
+                  [attr.data-active]="method() === item.key"
+                  (click)="setMethod(item.key)"
+                >
+                  {{ item.label }}
+                </button>
+              }
+            </div>
+
+            <div class="mt-3 rounded-lg border border-white/10 bg-[#080d19] px-2.5 py-2">
+              <p class="font-mono text-[10px] text-slate-400">{{ methodInfo().formula }}</p>
+            </div>
+
+            <div class="mt-3 grid grid-cols-2 gap-2">
+              <button type="button" class="op-btn" (click)="doubleN()">Duplicar n</button>
+              <button type="button" class="op-btn" (click)="fitView()">Ajustar vista</button>
+            </div>
+
+            @if (riemannResult(); as result) {
+              <dl class="mt-4 space-y-1.5 border-t border-white/5 pt-3 text-[11px]">
+                <div class="flex justify-between gap-2">
+                  <dt class="text-slate-400">Δx</dt>
+                  <dd class="font-mono text-slate-200">{{ format(result.delta, 4) }}</dd>
+                </div>
+                <div class="flex justify-between gap-2">
+                  <dt class="text-slate-400">Suma</dt>
+                  <dd class="font-mono text-emerald-300">{{ format(result.sum) }}</dd>
+                </div>
+                <div class="flex justify-between gap-2">
+                  <dt class="text-slate-400">Referencia</dt>
+                  <dd class="font-mono text-sky-300">{{ format(result.reference) }}</dd>
+                </div>
+                <div class="flex justify-between gap-2">
+                  <dt class="text-slate-400">Error</dt>
+                  <dd class="font-mono text-rose-300">{{ format(result.error) }}</dd>
+                </div>
+              </dl>
+            }
+          </div>
+
+          <div
+            class="rounded-2xl border border-white/10 bg-white/[0.03] p-4 shadow-2xl shadow-black/20"
+          >
+            <h2 class="text-sm font-semibold text-white">Convergencia</h2>
+            <p class="mt-1 text-[10px] leading-relaxed text-slate-500">
+              La referencia se calcula con Simpson compuesto. Al duplicar n, el error debería
+              reducirse según el método.
+            </p>
+
+            <div class="mt-3 overflow-x-auto">
+              <table class="w-full text-[10px]">
+                <thead class="text-[9px] uppercase tracking-[0.1em] text-slate-500">
+                  <tr class="border-y border-white/5">
+                    <th class="py-1.5 text-left font-medium">n</th>
+                    <th class="py-1.5 text-right font-medium">Suma</th>
+                    <th class="py-1.5 text-right font-medium">Error</th>
+                  </tr>
+                </thead>
+                <tbody class="divide-y divide-white/5">
+                  @for (row of convergence(); track row.n) {
+                    <tr>
+                      <td class="py-1.5 font-mono text-slate-300">{{ row.n }}</td>
+                      <td class="py-1.5 text-right font-mono text-emerald-300">
+                        {{ format(row.sum) }}
+                      </td>
+                      <td class="py-1.5 text-right font-mono text-rose-300">
+                        {{ format(row.error) }}
+                      </td>
+                    </tr>
+                  }
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <div
+            class="rounded-2xl border border-white/10 bg-white/[0.03] p-4 shadow-2xl shadow-black/20"
+          >
+            <h2 class="text-sm font-semibold text-white">Lectura</h2>
+            <p class="mt-2 text-xs leading-relaxed text-slate-400">
+              La suma de Riemann aproxima el área firmada bajo f entre a y b. Los rectángulos verdes
+              suman y los rojos restan. Al aumentar n, la aproximación converge a la integral
+              definida.
+            </p>
+            <p
+              class="mt-2 rounded-lg border border-white/10 bg-white/[0.03] px-2.5 py-2 font-mono text-[10px] text-slate-400"
+            >
+              ∫ₐᵇ f(x) dx ≈ Σ f(xᵢ*) Δx
+            </p>
+          </div>
+        } @else if (mode() === 'polar') {
+          <div
+            class="rounded-2xl border border-white/10 bg-white/[0.03] p-4 shadow-2xl shadow-black/20"
+          >
+            <h2 class="text-sm font-semibold text-white">Intervalo angular</h2>
+            <p class="mt-1 text-xs leading-relaxed text-slate-400">
+              θ se mide en radianes. La curva se traza desde θ mín hasta θ máx.
+            </p>
+
+            <div class="mt-3 grid grid-cols-2 gap-2">
+              <label class="block">
+                <span class="field-label">θ mín</span>
+                <input
+                  class="field-input"
+                  type="number"
+                  step="0.1"
+                  [value]="thetaMin()"
+                  (input)="onThetaMinInput($event)"
+                  aria-label="Ángulo mínimo"
+                />
+              </label>
+              <label class="block">
+                <span class="field-label">θ máx</span>
+                <input
+                  class="field-input"
+                  type="number"
+                  step="0.1"
+                  [value]="thetaMax()"
+                  (input)="onThetaMaxInput($event)"
+                  aria-label="Ángulo máximo"
+                />
+              </label>
+            </div>
+
+            @if (!polarRangeValid()) {
+              <p class="mt-2 text-[10px] text-amber-300">
+                El ángulo máximo debe ser mayor que el mínimo.
+              </p>
+            }
+
+            <p class="field-label mt-4">Rangos rápidos</p>
+            <div class="grid grid-cols-3 gap-1.5">
+              <button type="button" class="dist-chip" (click)="setThetaPreset(1)">0–2π</button>
+              <button type="button" class="dist-chip" (click)="setThetaPreset(2)">0–4π</button>
+              <button type="button" class="dist-chip" (click)="setThetaPreset(0.5)">0–π</button>
+            </div>
+
+            <button type="button" class="op-btn mt-3 w-full" (click)="fitView()">
+              Ajustar vista
+            </button>
+
+            <p class="mt-3 text-[10px] leading-relaxed text-slate-500">
+              Algunos rosales se completan en 0–π; otros necesitan 0–2π o 0–4π.
+            </p>
+          </div>
+
+          <div
+            class="rounded-2xl border border-white/10 bg-white/[0.03] p-4 shadow-2xl shadow-black/20"
+          >
+            <h2 class="text-sm font-semibold text-white">Lectura</h2>
+            <p class="mt-2 text-xs leading-relaxed text-slate-400">
+              Cada ángulo θ produce un radio r(θ). El punto cartesiano es (r(θ)·cos θ, r(θ)·sin θ).
+              Si r es negativo, el punto cae al otro lado del origen.
+            </p>
+            <p
+              class="mt-2 rounded-lg border border-white/10 bg-white/[0.03] px-2.5 py-2 font-mono text-[10px] text-slate-400"
+            >
+              x = r(θ) cos θ · y = r(θ) sin θ
+            </p>
+          </div>
+        } @else {
+          <div
+            class="rounded-2xl border border-white/10 bg-white/[0.03] p-4 shadow-2xl shadow-black/20"
+          >
+            <h2 class="text-sm font-semibold text-white">Intervalo de t</h2>
+            <p class="mt-1 text-xs leading-relaxed text-slate-400">
+              El parámetro t recorre el intervalo. La curva se dibuja punto a punto.
+            </p>
+
+            <div class="mt-3 grid grid-cols-2 gap-2">
+              <label class="block">
+                <span class="field-label">t mín</span>
+                <input
+                  class="field-input"
+                  type="number"
+                  step="0.1"
+                  [value]="tMin()"
+                  (input)="onTMinInput($event)"
+                  aria-label="Parámetro t mínimo"
+                />
+              </label>
+              <label class="block">
+                <span class="field-label">t máx</span>
+                <input
+                  class="field-input"
+                  type="number"
+                  step="0.1"
+                  [value]="tMax()"
+                  (input)="onTMaxInput($event)"
+                  aria-label="Parámetro t máximo"
+                />
+              </label>
+            </div>
+
+            @if (!parametricRangeValid()) {
+              <p class="mt-2 text-[10px] text-amber-300">
+                El valor máximo de t debe ser mayor que el mínimo.
+              </p>
+            }
+
+            <p class="field-label mt-4">Rangos rápidos</p>
+            <div class="grid grid-cols-3 gap-1.5">
+              <button type="button" class="dist-chip" (click)="setParamPreset('full')">0–2π</button>
+              <button type="button" class="dist-chip" (click)="setParamPreset('half')">0–π</button>
+              <button type="button" class="dist-chip" (click)="setParamPreset('symmetric')">
+                −π–π
+              </button>
+            </div>
+
+            <button type="button" class="op-btn mt-3 w-full" (click)="fitView()">
+              Ajustar vista
+            </button>
+
+            <p class="mt-3 text-[10px] leading-relaxed text-slate-500">
+              Un intervalo más amplio puede repetir la curva o recorrerla varias veces.
+            </p>
+          </div>
+
+          <div
+            class="rounded-2xl border border-white/10 bg-white/[0.03] p-4 shadow-2xl shadow-black/20"
+          >
+            <h2 class="text-sm font-semibold text-white">Lectura</h2>
+            <p class="mt-2 text-xs leading-relaxed text-slate-400">
+              Cada t produce un punto (x(t), y(t)). La curva puede autointersectarse y no ser una
+              función y = f(x).
+            </p>
+            <p
+              class="mt-2 rounded-lg border border-white/10 bg-white/[0.03] px-2.5 py-2 font-mono text-[10px] text-slate-400"
+            >
+              (x(t), y(t)), t ∈ [t mín, t máx]
+            </p>
+          </div>
+        }
+      </aside>
+    </section>
+  </div>
+</div>
