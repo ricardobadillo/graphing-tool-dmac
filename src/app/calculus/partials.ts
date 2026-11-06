@@ -114,6 +114,22 @@ export function directionalDerivative(fx: number, fy: number, angle: number): nu
   return fx * Math.cos(angle) + fy * Math.sin(angle);
 }
 
+export function unitDirection(angle: number): { x: number; y: number } {
+  return { x: Math.cos(angle), y: Math.sin(angle) };
+}
+
+export function gradientMagnitude(fx: number, fy: number): number {
+  return Math.hypot(fx, fy);
+}
+
+export function gradientAngle(fx: number, fy: number): number {
+  return Math.atan2(fy, fx);
+}
+
+export function maximumDirectionalDerivative(fx: number, fy: number): number {
+  return gradientMagnitude(fx, fy);
+}
+
 export function tangentPlane(
   expression: string,
   x: number,

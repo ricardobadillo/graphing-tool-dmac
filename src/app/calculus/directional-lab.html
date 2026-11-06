@@ -1,0 +1,182 @@
+<section class="grid gap-4 lg:grid-cols-[minmax(300px,380px)_minmax(0,1fr)]">
+  <aside class="flex flex-col gap-4">
+    <div class="rounded-2xl border border-white/10 bg-white/[0.03] p-4 shadow-2xl shadow-black/20">
+      <h2 class="text-sm font-semibold text-white">Punto y dirección</h2>
+
+      <label class="mt-3 block">
+        <span class="lab-field-label">f(x, y)</span>
+        <input
+          class="lab-input"
+          type="text"
+          [value]="expression()"
+          (input)="onExpressionInput($event)"
+          aria-label="Función de dos variables"
+        />
+      </label>
+
+      <div class="mt-3 grid grid-cols-2 gap-2">
+        <label class="block">
+          <span class="lab-field-label">x₀</span>
+          <input
+            class="lab-input"
+            type="text"
+            [value]="xInput()"
+            (input)="onXInput($event)"
+            aria-label="Coordenada x del punto"
+          />
+        </label>
+        <label class="block">
+          <span class="lab-field-label">y₀</span>
+          <input
+            class="lab-input"
+            type="text"
+            [value]="yInput()"
+            (input)="onYInput($event)"
+            aria-label="Coordenada y del punto"
+          />
+        </label>
+      </div>
+
+      <div class="mt-3">
+        <div class="flex items-center justify-between">
+          <span class="lab-field-label !mb-0">dirección θ</span>
+          <span class="font-mono text-[11px] text-pink-200">{{ angleDegrees() }}°</span>
+        </div>
+        <input
+          class="range-input mt-2 w-full"
+          type="range"
+          min="0"
+          max="360"
+          step="1"
+          [value]="angleDegrees()"
+          (input)="onAngleInput($event)"
+          aria-label="Ángulo de la dirección"
+        />
+        <div class="mt-2 flex items-center gap-2">
+          <input
+            class="lab-input"
+            type="text"
+            [value]="angleInput()"
+            (input)="onAngleInput($event)"
+            aria-label="Ángulo en grados"
+          />
+          <span class="font-mono text-[10px] text-slate-500">grados</span>
+        </div>
+      </div>
+
+      <div class="mt-2 flex flex-wrap gap-1.5">
+        @for (preset of presets; track preset.label) {
+          <button type="button" class="lab-chip" (click)="applyPreset(preset)">
+            {{ preset.label }}
+          </button>
+        }
+      </div>
+
+      @if (!valid()) {
+        <p class="mt-3 text-[11px] text-rose-300">Revisa las coordenadas y el ángulo.</p>
+      }
+      @if (analysis().error) {
+        <p class="mt-3 text-[11px] text-rose-300">{{ analysis().error }}</p>
+      }
+    </div>
+
+    <div class="rounded-2xl border border-white/10 bg-white/[0.03] p-4 shadow-2xl shadow-black/20">
+      <h2 class="text-sm font-semibold text-white">Derivada direccional</h2>
+
+      <p class="mt-2 rounded-lg bg-white/[0.03] px-2.5 py-2 font-mono text-[11px] text-pink-200">
+        D<sub>u</sub>f = ∇f · u = fx cos θ + fy sen θ
+      </p>
+
+      <p class="mt-3 font-mono text-2xl text-sky-200">{{ format(directional()) }}</p>
+      <p class="mt-1 text-[11px] text-slate-500">
+        @if (directional() === null) {
+          Sin datos suficientes.
+        } @else if ((directional() ?? 0) > 0) {
+          La función crece en la dirección elegida.
+        } @else if ((directional() ?? 0) < 0) {
+          La función decrece en la dirección elegida.
+        } @else {
+          La dirección es tangente a la curva de nivel.
+        }
+      </p>
+
+      <div class="mt-3 grid grid-cols-2 gap-2 text-[11px]">
+        <div class="rounded-lg border border-white/10 bg-white/[0.02] p-2">
+          <p class="text-slate-500">∂f/∂x</p>
+          <p class="mt-1 font-mono text-sky-200">{{ format(analysis().numeric?.fx ?? null) }}</p>
+        </div>
+        <div class="rounded-lg border border-white/10 bg-white/[0.02] p-2">
+          <p class="text-slate-500">∂f/∂y</p>
+          <p class="mt-1 font-mono text-violet-200">{{ format(analysis().numeric?.fy ?? null) }}</p>
+        </div>
+        <div class="rounded-lg border border-white/10 bg-white/[0.02] p-2">
+          <p class="text-slate-500">u</p>
+          <p class="mt-1 font-mono text-pink-200">
+            ({{ format(direction().x) }}, {{ format(direction().y) }})
+          </p>
+        </div>
+        <div class="rounded-lg border border-white/10 bg-white/[0.02] p-2">
+          <p class="text-slate-500">|∇f|</p>
+          <p class="mt-1 font-mono text-amber-200">{{ format(magnitude()) }}</p>
+        </div>
+      </div>
+
+      <div class="mt-3 space-y-1.5 border-t border-white/5 pt-3 text-[11px]">
+        <p class="flex justify-between gap-2">
+          <span class="text-slate-500">∇f</span>
+          <span class="font-mono text-amber-200">
+            ({{ format(gradient()?.x ?? null) }}, {{ format(gradient()?.y ?? null) }})
+          </span>
+        </p>
+        <p class="flex justify-between gap-2">
+          <span class="text-slate-500">dirección del gradiente</span>
+          <span class="font-mono text-amber-200">{{ format(gradientDegrees()) }}°</span>
+        </p>
+        <p class="flex justify-between gap-2">
+          <span class="text-slate-500">máximo de D<sub>u</sub>f</span>
+          <span class="font-mono text-emerald-200">{{ format(magnitude()) }}</span>
+        </p>
+      </div>
+    </div>
+  </aside>
+
+  <div class="flex flex-col gap-4">
+    <div
+      class="flex min-h-[440px] flex-col overflow-hidden rounded-2xl border border-white/10 bg-white/[0.03] shadow-2xl shadow-black/25"
+    >
+      <div class="relative flex-1 overflow-hidden">
+        <div class="lab-stage absolute inset-0"></div>
+        <canvas
+          #canvas
+          class="absolute inset-0 h-full w-full"
+          tabindex="0"
+          aria-label="Mapa de calor con el gradiente, la dirección elegida y la tangente a la curva de nivel."
+        ></canvas>
+      </div>
+      <div class="border-t border-white/5 px-3 py-2 font-mono text-[10px] text-slate-500">
+        gradiente en amarillo · dirección en rosa · tangente a la curva de nivel en gris
+      </div>
+    </div>
+
+    <div class="rounded-2xl border border-white/10 bg-white/[0.03] p-4 shadow-2xl shadow-black/20">
+      <h2 class="text-sm font-semibold text-white">Interpretación</h2>
+      <div class="mt-2 grid gap-2 text-[11px] leading-relaxed text-slate-400 md:grid-cols-3">
+        <p class="rounded-lg border border-white/10 bg-white/[0.02] p-2.5">
+          <span class="font-semibold text-amber-200">Gradiente.</span>
+          Apunta hacia el máximo crecimiento de la función. Su módulo es la máxima derivada
+          direccional posible.
+        </p>
+        <p class="rounded-lg border border-white/10 bg-white/[0.02] p-2.5">
+          <span class="font-semibold text-pink-200">Dirección.</span>
+          Debe ser un vector unitario. Aquí se construye como
+          <span class="font-mono">u = (cos θ, sen θ)</span>.
+        </p>
+        <p class="rounded-lg border border-white/10 bg-white/[0.02] p-2.5">
+          <span class="font-semibold text-slate-200">Tangente.</span>
+          Si <span class="font-mono">D<sub>u</sub>f = 0</span>, la dirección es perpendicular al
+          gradiente y tangente a la curva de nivel.
+        </p>
+      </div>
+    </div>
+  </div>
+</section>

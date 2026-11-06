@@ -1,0 +1,8 @@
+:host {
+  display: block;
+}
+
+.range-input {
+  accent-color: rgb(244 114 182);
+  cursor: pointer;
+}

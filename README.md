@@ -80,7 +80,8 @@ La ruta `/calculo-avanzado` reúne:
 - **Integración:** definida, impropia, sustitución, por partes y fracciones parciales.
 - **Aplicaciones:** área entre curvas, longitud de arco y sólidos de revolución.
 - **EDOs:** separables y lineales de primer orden, campo de pendientes y solución RK4.
-- **Derivadas parciales:** gradiente, derivada direccional, plano tangente y mapa de calor.
+- **Derivadas parciales:** gradiente, plano tangente y mapa de calor.
+- **Derivadas direccionales:** vector unitario, producto punto, dirección de máximo crecimiento y tangente a la curva de nivel.
 
 ## Números exactos
 

@@ -1,4 +1,12 @@
-import { analyzePartials, directionalDerivative, tangentPlane } from './partials';
+import {
+  analyzePartials,
+  directionalDerivative,
+  gradientAngle,
+  gradientMagnitude,
+  maximumDirectionalDerivative,
+  tangentPlane,
+  unitDirection,
+} from './partials';
 
 describe('derivadas parciales y gradiente', () => {
   it('calcula derivadas parciales de x^2 + y^2', () => {
@@ -16,6 +24,16 @@ describe('derivadas parciales y gradiente', () => {
   it('calcula derivada direccional', () => {
     expect(directionalDerivative(2, 4, 0)).toBeCloseTo(2);
     expect(directionalDerivative(2, 4, Math.PI / 2)).toBeCloseTo(4);
+  });
+
+  it('calcula dirección unidad, magnitud y dirección del gradiente', () => {
+    const direction = unitDirection(Math.PI / 2);
+
+    expect(direction.x).toBeCloseTo(0);
+    expect(direction.y).toBeCloseTo(1);
+    expect(gradientMagnitude(2, 4)).toBeCloseTo(Math.sqrt(20));
+    expect(gradientAngle(2, 4)).toBeCloseTo(Math.atan2(4, 2));
+    expect(maximumDirectionalDerivative(2, 4)).toBeCloseTo(Math.sqrt(20));
   });
 
   it('construye el plano tangente', () => {

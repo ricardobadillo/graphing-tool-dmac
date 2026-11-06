@@ -201,6 +201,56 @@ export function drawDashedLine(
   ctx.restore();
 }
 
+export function drawHeatmap(
+  ctx: CanvasRenderingContext2D,
+  width: number,
+  height: number,
+  bounds: PlotBounds,
+  evaluate: (x: number, y: number) => number,
+  columns = 58,
+  rows = 42,
+): { min: number; max: number } | null {
+  const values: number[][] = [];
+  let min = Number.POSITIVE_INFINITY;
+  let max = Number.NEGATIVE_INFINITY;
+
+  for (let row = 0; row <= rows; row += 1) {
+    const line: number[] = [];
+    for (let column = 0; column <= columns; column += 1) {
+      const x = bounds.xMin + ((bounds.xMax - bounds.xMin) * column) / columns;
+      const y = bounds.yMin + ((bounds.yMax - bounds.yMin) * row) / rows;
+      const value = evaluate(x, y);
+      line.push(Number.isFinite(value) ? value : Number.NaN);
+      if (Number.isFinite(value)) {
+        min = Math.min(min, value);
+        max = Math.max(max, value);
+      }
+    }
+    values.push(line);
+  }
+
+  if (!Number.isFinite(min) || !Number.isFinite(max)) {
+    return null;
+  }
+
+  const cellWidth = width / columns;
+  const cellHeight = height / rows;
+  for (let row = 0; row < rows; row += 1) {
+    for (let column = 0; column < columns; column += 1) {
+      const value = values[row][column];
+      if (!Number.isFinite(value)) {
+        continue;
+      }
+      const normalized = (value - min) / Math.max(1e-9, max - min);
+      const hue = 220 - normalized * 220;
+      ctx.fillStyle = `hsl(${hue} 75% ${18 + normalized * 32}% / 0.75)`;
+      ctx.fillRect(column * cellWidth, row * cellHeight, cellWidth + 0.5, cellHeight + 0.5);
+    }
+  }
+
+  return { min, max };
+}
+
 export function drawArrow(
   ctx: CanvasRenderingContext2D,
   fromX: number,
